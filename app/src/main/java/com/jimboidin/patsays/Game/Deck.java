@@ -1,60 +1,53 @@
 package com.jimboidin.patsays.Game;
 
+import com.jimboidin.patsays.Utils.DeckBuilder;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
 public class Deck {
-    private HashMap<String, ArrayList<Card>> cardMap;
+    private LinkedList<Card> cardLinkedList;
 
     public Deck() {
         populateDeck();
     }
 
 
-    public HashMap<String, ArrayList<Card>> getCardMap() { return cardMap; }
-    public int getSize() { return calculateSize(); }
+    public LinkedList<Card> getCardLinkedList() { return cardLinkedList; }
+    public int getSize() { return cardLinkedList.size(); }
+
 
     private void populateDeck() {
-        //add all cards
+        DeckBuilder deckBuilder = new DeckBuilder();
+        cardLinkedList = deckBuilder.createCardList();
     }
 
     public void removeJokers(){
-        cardMap.remove("joker");
+        for (Card card : cardLinkedList){
+            if (card.getSuit().equals("joker"))
+                cardLinkedList.remove(card);
+        }
     }
 
-    private int calculateSize() {
-        int counter = 0;
-        for (String key : cardMap.keySet()){
-            counter += cardMap.get(key).size();
-        }
-        return counter;
-    }
 
     public Card drawCard(){
-        //get random suit
         Random random = new Random();
-        List<String> keys = new ArrayList<>(cardMap.keySet());
-        String randomKey = keys.get(random.nextInt(keys.size()));
-        ArrayList<Card> randomSuit = cardMap.get(randomKey);
+        int randomIndex = random.nextInt(getSize());
 
-        //get random card
-        random = new Random();
-        int randomInt = random.nextInt(randomSuit.size());
-        randomSuit.remove(randomInt);
-
-        return randomSuit.remove(randomInt);
-
+        return cardLinkedList.remove(randomIndex);
     }
 
-    public ArrayList<Card> dealCards(int players){
-        ArrayList<Card> dealtCardList = new ArrayList<>();
-        int dealSize = calculateSize() / players;
-        for (int i = 0; i < dealSize; i++){
-            dealtCardList.add(drawCard());
-        }
-        return dealtCardList;
+    public LinkedList<Card> dealHand(int players){
+        int handSize = getSize() / players;
+        LinkedList<Card> hand = new LinkedList<>();
+
+        for (int i = 0; i < handSize; i++)
+            hand.add(drawCard());
+
+        return hand;
     }
 }
