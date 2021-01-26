@@ -13,7 +13,7 @@ public class Deck {
     private LinkedList<Card> cardLinkedList;
 
     public Deck() {
-        populateDeck();
+        cardLinkedList = populateDeck();
     }
 
 
@@ -21,9 +21,9 @@ public class Deck {
     public int getSize() { return cardLinkedList.size(); }
 
 
-    private void populateDeck() {
+    private LinkedList<Card> populateDeck() {
         DeckBuilder deckBuilder = new DeckBuilder();
-        cardLinkedList = deckBuilder.createCardList();
+        return deckBuilder.createCardList();
     }
 
     public void removeJokers(){

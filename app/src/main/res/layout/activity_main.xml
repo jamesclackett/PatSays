@@ -7,6 +7,11 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/clubs2"/>
+
     <TextView
         android:id="@+id/username_text_view"
         android:layout_width="match_parent"
