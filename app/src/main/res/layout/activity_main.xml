@@ -8,9 +8,9 @@
     tools:context=".MainActivity">
 
     <ImageView
+        android:id="@+id/testImage"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/clubs2"/>
+        android:layout_height="wrap_content"/>
 
     <TextView
         android:id="@+id/username_text_view"
