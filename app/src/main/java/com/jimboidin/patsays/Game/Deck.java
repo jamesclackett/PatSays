@@ -5,6 +5,7 @@ import com.jimboidin.patsays.Utils.DeckBuilder;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -27,9 +28,11 @@ public class Deck {
     }
 
     public void removeJokers(){
-        for (Card card : cardLinkedList){
+        Iterator<Card> itr = cardLinkedList.iterator();
+        while (itr.hasNext()){
+            Card card = itr.next();
             if (card.getSuit().equals("joker"))
-                cardLinkedList.remove(card);
+                itr.remove();
         }
     }
 
@@ -41,13 +44,18 @@ public class Deck {
         return cardLinkedList.remove(randomIndex);
     }
 
-    public LinkedList<Card> dealHand(int players){
+    public ArrayList<LinkedList<Card>> dealHand(int players){
         int handSize = getSize() / players;
-        LinkedList<Card> hand = new LinkedList<>();
+        ArrayList<LinkedList<Card>> handList = new ArrayList<>();
 
-        for (int i = 0; i < handSize; i++)
-            hand.add(drawCard());
+        for (int i = 0; i < players; i++){
+            LinkedList<Card> hand = new LinkedList<>();
+            for (int j = 0; j < handSize; j++)
+                hand.add(drawCard());
 
-        return hand;
+            handList.add(hand);
+        }
+
+        return handList;
     }
 }
