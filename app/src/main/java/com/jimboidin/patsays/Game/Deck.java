@@ -40,6 +40,7 @@ public class Deck {
     public Card drawCard(){
         Random random = new Random();
         int randomIndex = random.nextInt(getSize());
+        cardLinkedList.get(randomIndex).setFaceDown(true);
 
         return cardLinkedList.remove(randomIndex);
     }
