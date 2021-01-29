@@ -18,10 +18,10 @@ import com.jimboidin.patsays.Game.Deck;
 
 public class MainActivity extends AppCompatActivity {
     private Button mLogout;
+    private Button mStartGame;
     private TextView mUserName;
     private FirebaseAuth mAuth;
 
-    private ImageView testImage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +36,14 @@ public class MainActivity extends AppCompatActivity {
         mLogout = findViewById(R.id.logout_button);
         mLogout.setOnClickListener(v -> logOut());
 
+        mStartGame = findViewById(R.id.start_button);
+        mStartGame.setOnClickListener(v -> startGameActivity());
+    }
 
+    private void startGameActivity() {
+        Intent intent = new Intent(getApplicationContext(), GameActivity.class);
+        startActivity(intent);
+        finish();
     }
 
     private void logOut() {

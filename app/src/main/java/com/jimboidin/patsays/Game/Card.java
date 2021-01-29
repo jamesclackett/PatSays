@@ -8,19 +8,20 @@ import android.media.Image;
 public class Card {
     private String suit;
     private String value;
-    private boolean isFaceDown = false;
     private int iconID;
+    private boolean isSelected;
 
     public Card(String suit, String value, int iconID){
         this.suit = suit;
         this.value = value;
         this.iconID = iconID;
+        this.isSelected = false;
     }
 
     public String getSuit(){return suit; }
     public String getValue() { return value; }
-    public boolean isFaceDown() {return isFaceDown; }
     public int getIconID() {return iconID; }
+    public boolean isSelected() {return  isSelected; }
+    public void setSelected(boolean selected){ isSelected = selected; }
 
-    public void setFaceDown(boolean faceDown) {isFaceDown = faceDown; }
 }
