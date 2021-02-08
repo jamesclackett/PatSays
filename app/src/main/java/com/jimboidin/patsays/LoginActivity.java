@@ -18,6 +18,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class LoginActivity extends AppCompatActivity {
     private static final String TAG = "LoginActivity";
@@ -26,6 +28,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mPassword;
     private Button mLoginButton;
     private Button mSignUpButton;
+    private DatabaseReference usersDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +46,8 @@ public class LoginActivity extends AppCompatActivity {
 
         mSignUpButton = findViewById(R.id.sign_up_button);
         mSignUpButton.setOnClickListener(v -> launchSignUpActivity());
+
+        usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
     }
 
     private void userIsLoggedIn() {
@@ -85,6 +90,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
+                            usersDB.child(mAuth.getUid()).child("name").setValue(email);
                             Log.d(TAG, "createUserWithEmail:success");
                         } else {
                             Log.w(TAG, "createUserWithEmail:failure", task.getException());
@@ -102,6 +108,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
+                            usersDB.child(mAuth.getUid()).child("name").setValue(email);
                             Log.d(TAG, "signInWithEmail:success");
                         } else {
                             Log.w(TAG, "signInWithEmail:failure", task.getException());

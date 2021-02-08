@@ -11,6 +11,8 @@ public class Card {
     private int iconID;
     private boolean isSelected;
 
+    public Card(){ }
+
     public Card(String suit, String value, int iconID){
         this.suit = suit;
         this.value = value;
