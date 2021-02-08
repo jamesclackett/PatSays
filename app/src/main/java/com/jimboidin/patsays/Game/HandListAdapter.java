@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandListViewHolder> {
-    private LinkedList<Card> handList, selectedList;
+    private ArrayList<Card> handList, selectedList;
     private LayoutInflater mInflater;
 
-    public HandListAdapter(Context context, LinkedList<Card> handList, LinkedList<Card> selectedList){
+    public HandListAdapter(Context context, ArrayList<Card> handList, ArrayList<Card> selectedList){
         this.mInflater = LayoutInflater.from(context);
         this.handList = handList;
         this.selectedList = selectedList;

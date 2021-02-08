@@ -35,7 +35,7 @@ import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
     private String TAG = ".GameActivity";
-    private LinkedList<Card> myCards, handList, selectedList, tableChosenList, tableFinalList, playPile;
+    private ArrayList<Card> myCards, handList, selectedList, tableChosenList, tableFinalList, playPile;
     private ArrayList<ArrayList<Card>> opponentTableCards;
     private ArrayList<String> playerIds;
     private RecyclerView handRecyclerView;
@@ -56,12 +56,12 @@ public class GameActivity extends AppCompatActivity {
         setContentView(R.layout.activity_game);
         host = true;
 
-        myCards = new LinkedList<>();
-        handList = new LinkedList<>();
-        selectedList = new LinkedList<>();
-        tableChosenList = new LinkedList<>();
-        tableFinalList = new LinkedList<>();
-        playPile = new LinkedList<>();
+        myCards = new ArrayList<>();
+        handList = new ArrayList<>();
+        selectedList = new ArrayList<>();
+        tableChosenList = new ArrayList<>();
+        tableFinalList = new ArrayList<>();
+        playPile = new ArrayList<>();
         opponentTableCards = new ArrayList<>();
         playerIds = new ArrayList<>(); //will be given the uIds of each player (passed from lobby) using fake data for now.
         playerIds.add(FirebaseAuth.getInstance().getUid());
@@ -70,14 +70,15 @@ public class GameActivity extends AppCompatActivity {
         playerIds.add(FirebaseAuth.getInstance().getUid()+"player4");
 
 
-        //this reference is how other players will be involved in the same game
+        //game name should be passed from the lobby activity.
+        String gameName = "game_fACzStDbuabeF120vkvEbbptfwH2";
         currentPlayersDB = FirebaseDatabase.getInstance().getReference().child("Games")
-                .child("game_"+FirebaseAuth.getInstance().getUid()).child("Players");
+                .child(gameName).child("Players");
 
         currentPlayersDB.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                getCards(snapshot);
+                getDealtCards(snapshot);
             }
 
             @Override
@@ -110,40 +111,39 @@ public class GameActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
         }
-        setupCards();
-        createInHandRecyclerView();
     }
 
 
 
     private void dealCards(int players) throws Exception {
+        System.out.println("dealCards() called!");
         if (players > 4 || players < 2)
             throw new Exception("Incorrect number of players");
 
         Deck deck = new Deck();
-        ArrayList<LinkedList<Card>> dealtCards = new ArrayList<>();
+        ArrayList<ArrayList<Card>> dealtCards = new ArrayList<>();
         dealtCards = deck.dealHand(players);
 
-        myCards = dealtCards.get(0);
-        sendOpponentCards(dealtCards); //send cards to server
+        System.out.println("dealCards() finished!");
+        myCards = dealtCards.remove(0);
+        sendDealtCards(dealtCards); //send cards to server
     }
 
-    private void getCards(DataSnapshot snapshot){
-        System.out.println("snapshot received");
-        for (int i = 1; i < players; i++){ // start from 1 prevents own cards received (i think..) will use Ids later.
-            ArrayList<Card> playerCards = (ArrayList<Card>) snapshot.child("player_"+i).child("Cards").child("In_hand").getValue();
-            System.out.println(i + " " + playerCards);
-            opponentTableCards.add(playerCards);
-        }
-        setOpponentRecyclerViews();
+    private void getDealtCards(DataSnapshot snapshot){
+        System.out.println("getCards() called!");
+        //code to get players own dealt cards **create another method that gets Table and playPile cards..
+        System.out.println("getCards() finished!");
+        setupCards();
     }
 
 
-    private void sendOpponentCards(ArrayList<LinkedList<Card>> dealtCards) {
+    private void sendDealtCards(ArrayList<ArrayList<Card>> dealtCards) {
+        System.out.println("sendCards() called!");
         for (int i = 0; i < playerIds.size(); i++){
             currentPlayersDB.child(playerIds.get(i)).child("Cards").child("In_hand").setValue(dealtCards.get(i));
         }
-        System.out.println("finished sending cards");
+
+        System.out.println("sendCards() finished!");
     }
 
     private void closeGameServer(){
@@ -153,14 +153,19 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void setupCards() {
+        System.out.println("setupCards() called!");
         //Initialise card lists for game.
         for (int i = 0; i < 3; i++)
             tableFinalList.add(myCards.remove(i));
 
         handList.addAll(myCards);
+        System.out.println("setupCards() called!");
+        createInHandRecyclerView();
+        setOpponentRecyclerViews();
     }
 
     private void createInHandRecyclerView() {
+        System.out.println("handRecycler called!");
         handRecyclerView = findViewById(R.id.hand_recycler_view);
         handRecyclerView.setNestedScrollingEnabled(false);
         LinearLayoutManager horizontalLayoutManager =
@@ -169,6 +174,7 @@ public class GameActivity extends AppCompatActivity {
         handRecyclerView.setLayoutManager(horizontalLayoutManager);
         handListAdapter = new HandListAdapter(this, handList, selectedList);
         handRecyclerView.setAdapter(handListAdapter);
+        System.out.println("handRecycler finished!");
     }
 
     private void placeChosenCards() {

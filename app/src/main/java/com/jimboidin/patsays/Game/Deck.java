@@ -11,24 +11,24 @@ import java.util.List;
 import java.util.Random;
 
 public class Deck {
-    private LinkedList<Card> cardLinkedList;
+    private ArrayList<Card> cardArrayList;
 
     public Deck() {
-        cardLinkedList = populateDeck();
+        cardArrayList = populateDeck();
     }
 
 
-    public LinkedList<Card> getCardLinkedList() { return cardLinkedList; }
-    public int getSize() { return cardLinkedList.size(); }
+    public ArrayList<Card> getCardArrayList() { return cardArrayList; }
+    public int getSize() { return cardArrayList.size(); }
 
 
-    private LinkedList<Card> populateDeck() {
+    private ArrayList<Card> populateDeck() {
         DeckBuilder deckBuilder = new DeckBuilder();
         return deckBuilder.createCardList();
     }
 
     public void removeJokers(){
-        Iterator<Card> itr = cardLinkedList.iterator();
+        Iterator<Card> itr = cardArrayList.iterator();
         while (itr.hasNext()){
             Card card = itr.next();
             if (card.getSuit().equals("joker"))
@@ -41,15 +41,15 @@ public class Deck {
         Random random = new Random();
         int randomIndex = random.nextInt(getSize());
 
-        return cardLinkedList.remove(randomIndex);
+        return cardArrayList.remove(randomIndex);
     }
 
-    public ArrayList<LinkedList<Card>> dealHand(int players){
+    public ArrayList<ArrayList<Card>> dealHand(int players){
         int handSize = getSize() / players;
-        ArrayList<LinkedList<Card>> handList = new ArrayList<>();
+        ArrayList<ArrayList<Card>> handList = new ArrayList<>();
 
         for (int i = 0; i < players; i++){
-            LinkedList<Card> hand = new LinkedList<>();
+            ArrayList<Card> hand = new ArrayList<>();
             for (int j = 0; j < handSize; j++)
                 hand.add(drawCard());
 
