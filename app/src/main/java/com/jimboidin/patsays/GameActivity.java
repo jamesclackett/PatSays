@@ -132,6 +132,10 @@ public class GameActivity extends AppCompatActivity {
     private void getDealtCards(DataSnapshot snapshot){
         System.out.println("getCards() called!");
         //code to get players own dealt cards **create another method that gets Table and playPile cards..
+        if (!host){
+            myCards = (ArrayList<Card>) snapshot.child(playerIds.get(1)).child("Cards").child("In_hand").getValue();
+            System.out.println(myCards.size());
+        }
         System.out.println("getCards() finished!");
         setupCards();
     }
@@ -142,7 +146,6 @@ public class GameActivity extends AppCompatActivity {
         for (int i = 0; i < playerIds.size(); i++){
             currentPlayersDB.child(playerIds.get(i)).child("Cards").child("In_hand").setValue(dealtCards.get(i));
         }
-
         System.out.println("sendCards() finished!");
     }
 
