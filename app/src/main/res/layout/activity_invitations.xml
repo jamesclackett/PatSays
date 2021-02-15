@@ -4,35 +4,23 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    tools:context=".InvitationsActivity"
     android:orientation="vertical"
-    tools:context=".MainActivity">
-
-
+    android:padding="15dp">
     <TextView
-        android:id="@+id/username_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical|center_horizontal"
-        android:textSize="30sp" />
-
-    <Button
-        android:id="@+id/create_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/create_game" />
-
-    <Button
-        android:id="@+id/invitations_button"
+        android:text="@string/invitations"
+        android:textSize="25sp"/>
+    <TextView
+        android:id="@+id/invitee_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/invitations"/>
-
-    <Button
-        android:id="@+id/logout_button"
+        android:textSize="20sp"/>
+    <TextView
+        android:id="@+id/host_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/logout" />
-
+        android:textSize="20sp"/>
 
 </LinearLayout>

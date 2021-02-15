@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent"
-        android:text="Game Lobby"
+        android:text="@string/game_lobby"
         android:textSize="20sp"
         android:textStyle="bold"
         android:layout_margin="15dp"/>
@@ -21,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/lobby_title"
-        android:text="players:"
+        android:text="@string/players"
         android:layout_margin="15dp"/>
 
     <TextView
@@ -41,12 +41,12 @@
             android:id="@+id/invite_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Invite Players"/>
+            android:text="@string/invite_players"/>
         <Button
             android:id="@+id/start_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="start game"/>
+            android:text="@string/start_game"/>
     </LinearLayout>
 
 

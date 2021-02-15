@@ -1,27 +1,18 @@
 package com.jimboidin.patsays;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.res.ResourcesCompat;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.Button;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.jimboidin.patsays.Game.Card;
-import com.jimboidin.patsays.Game.Deck;
 
 public class MainActivity extends AppCompatActivity {
-    private Button mLogout;
-    private Button mCreateGame;
-    private TextView mUserName;
+    private final String TAG = "MainActivity";
     private FirebaseAuth mAuth;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,14 +21,23 @@ public class MainActivity extends AppCompatActivity {
 
         mAuth = FirebaseAuth.getInstance();
 
-        mUserName = findViewById(R.id.username_text_view);
-        mUserName.setText("Signed in as \n" + mAuth.getCurrentUser().getEmail());
+        TextView userTextView = findViewById(R.id.username_text_view);
+        String info = "Signed in as \\n\" + mAuth.getCurrentUser().getEmail()";
+        userTextView.setText(info);
 
-        mLogout = findViewById(R.id.logout_button);
-        mLogout.setOnClickListener(v -> logOut());
+        Button logoutButton = findViewById(R.id.logout_button);
+        logoutButton.setOnClickListener(v -> logOut());
 
-        mCreateGame = findViewById(R.id.create_button);
-        mCreateGame.setOnClickListener(v -> startLobbyActivity());
+        Button createButton = findViewById(R.id.create_button);
+        createButton.setOnClickListener(v -> startLobbyActivity());
+
+        Button mInvitations = findViewById(R.id.invitations_button);
+        mInvitations.setOnClickListener(v -> startInvitationsActivity());
+    }
+
+    private void startInvitationsActivity(){
+        Intent intent = new Intent(getApplicationContext(), InvitationsActivity.class);
+        startActivity(intent);
     }
 
     private void startLobbyActivity() {
@@ -47,7 +47,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logOut() {
-        FirebaseAuth.getInstance().signOut();
+        mAuth.signOut();
+        Log.d(TAG, "user signed out");
         Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         startActivity(intent);

@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.ChildEventListener;
@@ -27,33 +28,55 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 
 public class LobbyActivity extends AppCompatActivity {
-    private String hostName;
+    private final String TAG = "LobbyActivity";
+    private String mHostName;
     private ArrayList<String> playerList;
-    private DatabaseReference currentGameDB;
-    private Button startButton, inviteButton;
-    private TextView playersTextView;
-    private boolean host;
+    private DatabaseReference mCurrentGameDB;
+    private TextView mPlayersTextView;
+    private boolean mIsHost;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
 
-        host = getIntent().getBooleanExtra("host", false);
+        mIsHost = getIntent().getBooleanExtra("host", false);
 
-        playersTextView = findViewById(R.id.player_list);
-        startButton = findViewById(R.id.start_button);
-        inviteButton = findViewById(R.id.invite_button);
+        mPlayersTextView = findViewById(R.id.player_list);
+        Button startButton = findViewById(R.id.start_button);
+        Button inviteButton = findViewById(R.id.invite_button);
         inviteButton.setOnClickListener(v -> openInviteDialog());
 
 
-        if (host)
+        if (mIsHost) {
+            mHostName = FirebaseAuth.getInstance().getUid();
             createServerGame();
-        else
+        }
+        else {
+            mHostName = getIntent().getStringExtra("host_name");
+            startButton.setEnabled(false);
             joinServerGame();
+        }
+
 
     }
 
+    private void createServerGame(){
+        mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
+        mCurrentGameDB.child("Players").child(mHostName).setValue(true);
+        mCurrentGameDB.child("Players").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                //playerLeft & player joined
+                System.out.println("listener Triggered!"+snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void joinServerGame() { }
 
 
     private void openInviteDialog() {
@@ -70,18 +93,26 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void invitePlayer(String name){
+        String myUserId = FirebaseAuth.getInstance().getCurrentUser().getEmail();
+
         DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
         usersDB.orderByChild("name").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String inviteID = "";
+                String invitedUserID = null;
                 for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                    inviteID = childDataSnapshot.getKey();
+                    invitedUserID = childDataSnapshot.getKey();
+                    Log.d(TAG, "invite player: user found");
                 }
-                System.out.println("TEST "+ inviteID);
-                usersDB.child(inviteID).child("Invitations").child("invitee")
-                        .setValue(FirebaseAuth.getInstance().getCurrentUser().getEmail());
-                usersDB.child(inviteID).child("Invitations").child("host").setValue(hostName);
+
+                if (invitedUserID != null && myUserId != null){
+                    usersDB.child(invitedUserID).child("Invitations").child("invitee")
+                            .setValue(myUserId);
+                    usersDB.child(invitedUserID).child("Invitations").child("host").setValue(mHostName);
+                    Log.d(TAG, "invite player: DB invite created");
+                } else
+                    Log.w(TAG, "invite player: invitation not created");
+
             }
 
             @Override
@@ -91,31 +122,17 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
 
-    private void createServerGame(){
-        hostName = FirebaseAuth.getInstance().getUid();
-        currentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(hostName);
-        currentGameDB.child("Players").child(hostName).setValue(true);
-        currentGameDB.child("Players").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                //playerLeft & player joined
-                System.out.println("listener Triggered!"+snapshot);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        });
-    }
-
-    private void joinServerGame() {
-    }
 
     @Override
     public void onBackPressed() {
-        if (host)
-            currentGameDB.removeValue(); //destroy gameServer //TODO - add code to remove all other players from lobby
+        if (mIsHost)
+            mCurrentGameDB.removeValue(); //destroy gameServer //TODO - add code to remove all other players from lobby
         finish();
         super.onBackPressed();
+    }
+
+    private void displayToast(String message) {
+        Toast.makeText(LobbyActivity.this, message,
+                Toast.LENGTH_SHORT).show();
     }
 }

@@ -30,7 +30,7 @@
         android:id="@+id/login_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Log in"
+        android:text="@string/login"
         android:textSize="30sp" />
 
     <Button
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="40dp"
-        android:text="Sign up"
+        android:text="@string/sign_up"
         android:textSize="30sp" />
 
 </LinearLayout>
