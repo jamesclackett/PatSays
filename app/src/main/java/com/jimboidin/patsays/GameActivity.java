@@ -29,24 +29,21 @@ import java.util.ArrayList;
 import java.lang.*;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
-    private String TAG = ".GameActivity";
-    private ArrayList<Card> myCards, handList, selectedList, tableChosenList, tableFinalList, playPile;
-    private ArrayList<ArrayList<Card>> opponentTableCards;
-    private ArrayList<String> playerIds;
-    private RecyclerView handRecyclerView;
-    private RecyclerView.Adapter handListAdapter;
-    private DatabaseReference currentPlayersDB;
-
-    private ImageView finalCard0, finalCard1, finalCard2, chosenCard0, chosenCard1, chosenCard2;
-    private Button chooseButton;
-    private Button endButton;
-    private Boolean host;
-    private int players = 4;
+    private final String TAG = "GameActivity";
+    private RecyclerView mHandRecyclerView;
+    private RecyclerView.Adapter mHandListAdapter;
+    private ArrayList<Card> mHandList, mSelectedList, mFinalList, mChosenList;
+    private Boolean mIsHost;
+    private ArrayList<String> mPlayerList;
+    private String mHostName;
+    private FirebaseAuth mAuth;
+    private DatabaseReference mCurrentGameDB;
 
 
 
@@ -54,65 +51,31 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
-        host = true;
 
-        myCards = new ArrayList<>();
-        handList = new ArrayList<>();
-        selectedList = new ArrayList<>();
-        tableChosenList = new ArrayList<>();
-        tableFinalList = new ArrayList<>();
-        playPile = new ArrayList<>();
-        opponentTableCards = new ArrayList<>();
-        playerIds = new ArrayList<>(); //will be given the uIds of each player (passed from lobby) using fake data for now.
-        playerIds.add(FirebaseAuth.getInstance().getUid());
-        playerIds.add(FirebaseAuth.getInstance().getUid()+"player2");
-        playerIds.add(FirebaseAuth.getInstance().getUid()+"player3");
-        playerIds.add(FirebaseAuth.getInstance().getUid()+"player4");
+        mAuth = FirebaseAuth.getInstance();
+        mIsHost = getIntent().getBooleanExtra("is_host", false);
+        mHostName = getIntent().getStringExtra("host_name");
+        mPlayerList = getIntent().getStringArrayListExtra("player_list");
+        mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
+        mSelectedList = new ArrayList<>();
+        mHandList = new ArrayList<>();
+        mChosenList = new ArrayList<>();
 
+        Button chooseButton = findViewById(R.id.choose_cards_button);
+        chooseButton.setOnClickListener(v -> placeChosenCards());
 
-        //game name should be passed from the lobby activity.
-        String gameName = "game_fACzStDbuabeF120vkvEbbptfwH2";
-        currentPlayersDB = FirebaseDatabase.getInstance().getReference().child("Games")
-                .child(gameName).child("Players");
-
-        currentPlayersDB.addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                getDealtCards(snapshot);
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-            }
-        }); // calls getCards();
-
-        chooseButton = findViewById(R.id.choose_cards_button);
-        chooseButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                placeChosenCards();
-            }
-        });
-
-        endButton = findViewById(R.id.end_game_button);
-        endButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                closeGameServer();
-            }
-        });
-
-
-
-        if (host) {
+        if (mIsHost) {
             try {
-                dealCards(players);
+                dealCards(mPlayerList.size());
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-    }
+        else{
+            setupDealtListener();
+        }
 
+    }
 
 
     private void dealCards(int players) throws Exception {
@@ -121,78 +84,96 @@ public class GameActivity extends AppCompatActivity {
             throw new Exception("Incorrect number of players");
 
         Deck deck = new Deck();
-        ArrayList<ArrayList<Card>> dealtCards = new ArrayList<>();
-        dealtCards = deck.dealHand(players);
+        HashMap<String, ArrayList<Card>> dealtMap = new HashMap<>();
+        ArrayList<ArrayList<Card>> dealtDeck = deck.dealHand(players);
 
-        System.out.println("dealCards() finished!");
-        myCards = dealtCards.remove(0);
-        sendDealtCards(dealtCards); //send cards to server
+        for (int i = 0; i < players; i++)
+            dealtMap.put(mPlayerList.get(i), dealtDeck.get(i));
+
+        mHandList = dealtMap.get(mAuth.getUid());
+        sendDealtCards(dealtMap);
+        setupFinalCards();
     }
 
-    private void getDealtCards(DataSnapshot snapshot){
-        System.out.println("getCards() called!");
-        //code to get players own dealt cards **create another method that gets Table and playPile cards..
-        if (!host){
-            myCards = (ArrayList<Card>) snapshot.child(playerIds.get(1)).child("Cards").child("In_hand").getValue();
-            System.out.println(myCards.size());
+    private void sendDealtCards(HashMap<String, ArrayList<Card>> dealtMap) {
+        for (int i = 0; i < mPlayerList.size(); i++){
+            mCurrentGameDB.child("Players").child(mPlayerList.get(i))
+                    .child("Cards").child("In_Hand").setValue(dealtMap.get(mPlayerList.get(i)));
         }
-        System.out.println("getCards() finished!");
-        setupCards();
+    }
+
+    private void setupDealtListener(){
+        mCurrentGameDB.child("Players").child(mAuth.getUid())
+                .child("Cards").child("In_Hand").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists())
+                    getDealtCards();
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void getDealtCards(){
+        System.out.println("here 1");
+        DatabaseReference myHandDb = mCurrentGameDB.child("Players").child(mAuth.getUid())
+                .child("Cards").child("In_Hand");
+        myHandDb.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    for (DataSnapshot child : snapshot.getChildren()){
+                        Card card = child.getValue(Card.class);
+                        mHandList.add(card);
+                    }
+                    setupFinalCards();
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
     }
 
 
-    private void sendDealtCards(ArrayList<ArrayList<Card>> dealtCards) {
-        System.out.println("sendCards() called!");
-        for (int i = 0; i < playerIds.size(); i++){
-            currentPlayersDB.child(playerIds.get(i)).child("Cards").child("In_hand").setValue(dealtCards.get(i));
-        }
-        System.out.println("sendCards() finished!");
-    }
-
-    private void closeGameServer(){
-        DatabaseReference currentGameServer = FirebaseDatabase.getInstance().getReference()
-                .child("Games").child("game_"+FirebaseAuth.getInstance().getUid());
-        currentGameServer.removeValue();
-    }
-
-    private void setupCards() {
-        System.out.println("setupCards() called!");
-        //Initialise card lists for game.
+    private void setupFinalCards() {
+        mFinalList = new ArrayList<>();
         for (int i = 0; i < 3; i++)
-            tableFinalList.add(myCards.remove(i));
+            mFinalList.add(mHandList.remove(i));
 
-        handList.addAll(myCards);
-        System.out.println("setupCards() called!");
+        mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(mFinalList);
         createInHandRecyclerView();
-        setOpponentRecyclerViews();
     }
+
+
 
     private void createInHandRecyclerView() {
-        System.out.println("handRecycler called!");
-        handRecyclerView = findViewById(R.id.hand_recycler_view);
-        handRecyclerView.setNestedScrollingEnabled(false);
+        mHandRecyclerView = findViewById(R.id.hand_recycler_view);
+        mHandRecyclerView.setNestedScrollingEnabled(false);
         LinearLayoutManager horizontalLayoutManager =
                 new LinearLayoutManager(GameActivity.this, LinearLayoutManager.HORIZONTAL,
                         false);
-        handRecyclerView.setLayoutManager(horizontalLayoutManager);
-        handListAdapter = new HandListAdapter(this, handList, selectedList);
-        handRecyclerView.setAdapter(handListAdapter);
-        System.out.println("handRecycler finished!");
+        mHandRecyclerView.setLayoutManager(horizontalLayoutManager);
+        System.out.println("handlist type is : " + mHandList.getClass());
+        mHandListAdapter = new HandListAdapter(this, mHandList, mSelectedList);
+        mHandRecyclerView.setAdapter(mHandListAdapter);
     }
 
     private void placeChosenCards() {
-        if (selectedList.size() == 3){
-            tableChosenList.addAll(selectedList);
-            chosenCard0 = findViewById(R.id.chosen_card_0);
-            chosenCard1 = findViewById(R.id.chosen_card_1);
-            chosenCard2 = findViewById(R.id.chosen_card_2);
-            chosenCard0.setImageDrawable(getResources().getDrawable(tableChosenList.get(0).getIconID()));
-            chosenCard1.setImageDrawable(getResources().getDrawable(tableChosenList.get(1).getIconID()));
-            chosenCard2.setImageDrawable(getResources().getDrawable(tableChosenList.get(2).getIconID()));
+        if (mSelectedList.size() == 3){
+            mChosenList.addAll(mSelectedList);
+            ImageView chosenCard0 = findViewById(R.id.chosen_card_0);
+            ImageView chosenCard1 = findViewById(R.id.chosen_card_1);
+            ImageView chosenCard2 = findViewById(R.id.chosen_card_2);
+            chosenCard0.setImageDrawable(getResources().getDrawable(mChosenList.get(0).getIconID()));
+            chosenCard1.setImageDrawable(getResources().getDrawable(mChosenList.get(1).getIconID()));
+            chosenCard2.setImageDrawable(getResources().getDrawable(mChosenList.get(2).getIconID()));
 
-            handList.removeAll(tableChosenList);
-            handListAdapter.notifyDataSetChanged();
+            mHandList.removeAll(mChosenList);
+            mHandListAdapter.notifyDataSetChanged();
+            Button chooseButton = findViewById(R.id.choose_cards_button);
             chooseButton.setVisibility(View.GONE);
+            mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Chosen").setValue(mChosenList);
         }
         else {
             Log.w(TAG, "incorrect number of cards chosen. Must choose 3");
@@ -201,13 +182,26 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void setOpponentRecyclerViews() {
-            //System.out.println(opponentTableCards);
+
     }
 
     private void showToast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
         toast.show();
     }
-    
 
+
+    private void closeGameServer(){
+        if (mIsHost)
+            mCurrentGameDB.removeValue(); //destroy gameServer
+        else
+            mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
+        finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        closeGameServer();
+        super.onBackPressed();
+    }
 }

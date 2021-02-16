@@ -20,13 +20,13 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandListViewHolder> {
-    private ArrayList<Card> handList, selectedList;
+    private ArrayList<Card> mHandList, mSelectedList;
     private LayoutInflater mInflater;
 
     public HandListAdapter(Context context, ArrayList<Card> handList, ArrayList<Card> selectedList){
         this.mInflater = LayoutInflater.from(context);
-        this.handList = handList;
-        this.selectedList = selectedList;
+        this.mHandList = handList;
+        this.mSelectedList = selectedList;
     }
 
 
@@ -39,7 +39,7 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
 
     @Override
     public void onBindViewHolder(@NonNull HandListAdapter.HandListViewHolder holder, int position) {
-        Drawable face = mInflater.getContext().getResources().getDrawable(handList.get(position).getIconID());
+        Drawable face = mInflater.getContext().getResources().getDrawable(mHandList.get(position).getIconID());
         Drawable border = mInflater.getContext().getResources().getDrawable(R.drawable.border);
 
         ImageView cardImage = holder.imageView;
@@ -48,12 +48,12 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
         cardImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Card card = handList.get(position);
-                if (!selectedList.contains(card)){
-                    selectedList.add(card);
+                Card card = mHandList.get(position);
+                if (!mSelectedList.contains(card)){
+                    mSelectedList.add(card);
                     cardImage.setBackground(border);
                 } else {
-                    selectedList.remove(card);
+                    mSelectedList.remove(card);
                     cardImage.setBackground(null);
                 }
 
@@ -61,11 +61,12 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
         });
 
 
+
     }
 
     @Override
     public int getItemCount() {
-        return handList.size();
+        return mHandList.size();
     }
 
 

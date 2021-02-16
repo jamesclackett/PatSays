@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
 
         TextView userTextView = findViewById(R.id.username_text_view);
-        String info = "Signed in as \\n\" + mAuth.getCurrentUser().getEmail()";
+        String info = "Signed in as \n " + mAuth.getCurrentUser().getEmail();
         userTextView.setText(info);
 
         Button logoutButton = findViewById(R.id.logout_button);
