@@ -2,6 +2,8 @@ package com.jimboidin.patsays;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -9,9 +11,11 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -24,6 +28,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.Game.Deck;
 import com.jimboidin.patsays.Game.HandListAdapter;
+import com.jimboidin.patsays.Game.TableCardsFragment;
 
 import java.util.ArrayList;
 import java.lang.*;
@@ -34,8 +39,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-public class GameActivity extends AppCompatActivity {
+public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
     private final String TAG = "GameActivity";
+    private TableCardsFragment mTableFragment;
     private RecyclerView mHandRecyclerView;
     private RecyclerView.Adapter mHandListAdapter;
     private ArrayList<Card> mHandList, mSelectedList, mFinalList, mChosenList;
@@ -60,6 +66,10 @@ public class GameActivity extends AppCompatActivity {
         mSelectedList = new ArrayList<>();
         mHandList = new ArrayList<>();
         mChosenList = new ArrayList<>();
+
+        mTableFragment = (TableCardsFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.table_frag);
+        setupOpponentFragments();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
         chooseButton.setOnClickListener(v -> placeChosenCards());
@@ -97,8 +107,10 @@ public class GameActivity extends AppCompatActivity {
 
     private void sendDealtCards(HashMap<String, ArrayList<Card>> dealtMap) {
         for (int i = 0; i < mPlayerList.size(); i++){
-            mCurrentGameDB.child("Players").child(mPlayerList.get(i))
-                    .child("Cards").child("In_Hand").setValue(dealtMap.get(mPlayerList.get(i)));
+            if (!mPlayerList.get(i).equals(mHostName)){
+                mCurrentGameDB.child("Players").child(mPlayerList.get(i))
+                        .child("Cards").child("In_Hand").setValue(dealtMap.get(mPlayerList.get(i)));
+            }
         }
     }
 
@@ -127,6 +139,7 @@ public class GameActivity extends AppCompatActivity {
                         Card card = child.getValue(Card.class);
                         mHandList.add(card);
                     }
+                    myHandDb.removeValue();
                     setupFinalCards();
                 }
             }
@@ -142,7 +155,26 @@ public class GameActivity extends AppCompatActivity {
             mFinalList.add(mHandList.remove(i));
 
         mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(mFinalList);
+        mTableFragment.setFinalCards(mFinalList);
         createInHandRecyclerView();
+    }
+
+    private void setupOpponentFragments(){
+        int[] idPlaceholders = new int[]{R.id.placeholder_0, R.id.placeholder_1, R.id.placeholder_2};
+        ArrayList<String> opponentList = new ArrayList<>(); //create this to avoid building fragment for self
+
+        for (String str : mPlayerList)
+            if (!str.equals(mAuth.getUid()))
+                opponentList.add(str);
+
+        for (int i = 0; i < opponentList.size(); i++){
+            DatabaseReference playerDbRef = mCurrentGameDB.child("Players").child(opponentList.get(i)).child("Cards");
+            FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+            TableCardsFragment opponentFragment = new TableCardsFragment();
+            opponentFragment.setDBRef(playerDbRef);
+            ft.replace(idPlaceholders[i], opponentFragment);
+            ft.commit();
+        }
     }
 
 
@@ -155,19 +187,20 @@ public class GameActivity extends AppCompatActivity {
                         false);
         mHandRecyclerView.setLayoutManager(horizontalLayoutManager);
         System.out.println("handlist type is : " + mHandList.getClass());
-        mHandListAdapter = new HandListAdapter(this, mHandList, mSelectedList);
+        mHandListAdapter = new HandListAdapter(this, mHandList);
         mHandRecyclerView.setAdapter(mHandListAdapter);
+    }
+
+    @Override
+    public void itemSelected(ArrayList<Card> selectedList) { //gets selectedList sent from HandListAdapter interface
+        mSelectedList = selectedList;
     }
 
     private void placeChosenCards() {
         if (mSelectedList.size() == 3){
             mChosenList.addAll(mSelectedList);
-            ImageView chosenCard0 = findViewById(R.id.chosen_card_0);
-            ImageView chosenCard1 = findViewById(R.id.chosen_card_1);
-            ImageView chosenCard2 = findViewById(R.id.chosen_card_2);
-            chosenCard0.setImageDrawable(getResources().getDrawable(mChosenList.get(0).getIconID()));
-            chosenCard1.setImageDrawable(getResources().getDrawable(mChosenList.get(1).getIconID()));
-            chosenCard2.setImageDrawable(getResources().getDrawable(mChosenList.get(2).getIconID()));
+
+            mTableFragment.setChosenCards(mChosenList);
 
             mHandList.removeAll(mChosenList);
             mHandListAdapter.notifyDataSetChanged();
@@ -181,9 +214,6 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    private void setOpponentRecyclerViews() {
-
-    }
 
     private void showToast(String message) {
         Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
@@ -204,4 +234,6 @@ public class GameActivity extends AppCompatActivity {
         closeGameServer();
         super.onBackPressed();
     }
+
+
 }

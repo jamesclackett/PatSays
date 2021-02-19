@@ -53,7 +53,7 @@ public class ExampleUnitTest {
         Deck deck = new Deck();
         int players = 4;
 
-        ArrayList<LinkedList<Card>> cardsList = deck.dealHand(players);
+        ArrayList<ArrayList<Card>> cardsList = deck.dealHand(players);
         assertEquals(players, cardsList.size());
 
         System.out.print("players = " + cardsList.size()
@@ -68,7 +68,7 @@ public class ExampleUnitTest {
 
     private int getNumJokers(Deck deck) {
         int counter = 0;
-        LinkedList<Card> testCardList = deck.getCardLinkedList();
+        ArrayList<Card> testCardList = deck.getCardArrayList();
         for (Card card : testCardList){
             if (card.getSuit().equals("joker")) counter++;
         }

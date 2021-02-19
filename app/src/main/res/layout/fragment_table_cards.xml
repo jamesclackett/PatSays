@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/table_cards"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:id="@+id/final_cards"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent">
+        <ImageView
+            android:id="@+id/final_card_0"
+            android:layout_width="60dp"
+            android:layout_height="110dp"
+            android:src="@drawable/red_back" />
+        <ImageView
+            android:id="@+id/final_card_1"
+            android:layout_width="60dp"
+            android:layout_height="110dp"
+            android:src="@drawable/red_back" />
+        <ImageView
+            android:id="@+id/final_card_2"
+            android:layout_width="60dp"
+            android:layout_height="110dp"
+            android:src="@drawable/red_back" />
+    </LinearLayout>
+
+    <LinearLayout
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/chosen_cards"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginBottom="10dp"
+        android:layout_marginEnd="10dp"
+        android:orientation="horizontal"
+        android:layout_marginRight="10dp">
+        <ImageView
+            android:id="@+id/chosen_card_0"
+            android:layout_width="60dp"
+            android:layout_height="110dp" />
+        <ImageView
+            android:id="@+id/chosen_card_1"
+            android:layout_width="60dp"
+            android:layout_height="110dp" />
+        <ImageView
+            android:id="@+id/chosen_card_2"
+            android:layout_width="60dp"
+            android:layout_height="110dp" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

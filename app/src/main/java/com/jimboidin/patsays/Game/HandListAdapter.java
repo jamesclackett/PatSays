@@ -22,11 +22,16 @@ import java.util.LinkedList;
 public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandListViewHolder> {
     private ArrayList<Card> mHandList, mSelectedList;
     private LayoutInflater mInflater;
+    private Listener listener;
 
-    public HandListAdapter(Context context, ArrayList<Card> handList, ArrayList<Card> selectedList){
+    public interface Listener {
+        void itemSelected(ArrayList<Card> selectedList);
+    };
+
+    public HandListAdapter(Context context, ArrayList<Card> handList){
         this.mInflater = LayoutInflater.from(context);
         this.mHandList = handList;
-        this.mSelectedList = selectedList;
+        this.mSelectedList = new ArrayList<>();
     }
 
 
@@ -34,6 +39,7 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
     @Override
     public HandListAdapter.HandListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = mInflater.inflate(R.layout.item_hand, parent, false);
+        this.listener = (Listener) mInflater.getContext();
         return new HandListViewHolder(view);
     }
 
@@ -56,6 +62,7 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
                     mSelectedList.remove(card);
                     cardImage.setBackground(null);
                 }
+                listener.itemSelected(mSelectedList);
 
             }
         });
