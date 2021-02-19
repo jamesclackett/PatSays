@@ -41,10 +41,9 @@ import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
     private final String TAG = "GameActivity";
-    private TableCardsFragment mTableFragment;
     private RecyclerView mHandRecyclerView;
     private RecyclerView.Adapter mHandListAdapter;
-    private ArrayList<Card> mHandList, mSelectedList, mFinalList, mChosenList;
+    private ArrayList<Card> mHandList, mSelectedList;
     private Boolean mIsHost;
     private ArrayList<String> mPlayerList;
     private String mHostName;
@@ -65,10 +64,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mSelectedList = new ArrayList<>();
         mHandList = new ArrayList<>();
-        mChosenList = new ArrayList<>();
 
-        mTableFragment = (TableCardsFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.table_frag);
+        setupMyFragment();
         setupOpponentFragments();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
@@ -150,18 +147,25 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
 
     private void setupFinalCards() {
-        mFinalList = new ArrayList<>();
+        ArrayList<Card> finalList = new ArrayList<>();
         for (int i = 0; i < 3; i++)
-            mFinalList.add(mHandList.remove(i));
+            finalList.add(mHandList.remove(i));
 
-        mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(mFinalList);
-        mTableFragment.setFinalCards(mFinalList);
+        mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(finalList);
         createInHandRecyclerView();
+    }
+
+    private void setupMyFragment(){
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        TableCardsFragment myTableCards = new TableCardsFragment();
+        myTableCards.setDBRef(mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards"));
+        ft.replace(R.id.my_table_fragment, myTableCards);
+        ft.commit();
     }
 
     private void setupOpponentFragments(){
         int[] idPlaceholders = new int[]{R.id.placeholder_0, R.id.placeholder_1, R.id.placeholder_2};
-        ArrayList<String> opponentList = new ArrayList<>(); //create this to avoid building fragment for self
+        ArrayList<String> opponentList = new ArrayList<>(); //create this to avoid building opponent fragment for self
 
         for (String str : mPlayerList)
             if (!str.equals(mAuth.getUid()))
@@ -198,15 +202,11 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
     private void placeChosenCards() {
         if (mSelectedList.size() == 3){
-            mChosenList.addAll(mSelectedList);
-
-            mTableFragment.setChosenCards(mChosenList);
-
-            mHandList.removeAll(mChosenList);
+            mHandList.removeAll(mSelectedList);
             mHandListAdapter.notifyDataSetChanged();
             Button chooseButton = findViewById(R.id.choose_cards_button);
             chooseButton.setVisibility(View.GONE);
-            mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Chosen").setValue(mChosenList);
+            mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Chosen").setValue(mSelectedList);
         }
         else {
             Log.w(TAG, "incorrect number of cards chosen. Must choose 3");
@@ -234,6 +234,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         closeGameServer();
         super.onBackPressed();
     }
+
 
 
 }

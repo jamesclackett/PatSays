@@ -1,5 +1,6 @@
 package com.jimboidin.patsays.Game;
 
+import android.content.Context;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -17,6 +18,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.R;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class TableCardsFragment extends Fragment {
@@ -24,6 +26,7 @@ public class TableCardsFragment extends Fragment {
     private ImageView mChosenCard0, mChosenCard1, mChosenCard2;
     private ArrayList<Card> mChosenList, mFinalList;
     private DatabaseReference mDBRef;
+    private Context mContext;
 
 
     @Override
@@ -46,18 +49,24 @@ public class TableCardsFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onAttach(@NonNull Context context) {
+        setDBListeners();
+        mContext = context;
+        super.onAttach(context);
+    }
+
     public void setChosenCards(ArrayList<Card> chosenList){
         mChosenList = chosenList;
-        mChosenCard0.setImageDrawable(getResources().getDrawable(mChosenList.get(0).getIconID()));
-        mChosenCard1.setImageDrawable(getResources().getDrawable(mChosenList.get(1).getIconID()));
-        mChosenCard2.setImageDrawable(getResources().getDrawable(mChosenList.get(2).getIconID()));
+        mChosenCard0.setImageDrawable(mContext.getResources().getDrawable(mChosenList.get(0).getIconID()));
+        mChosenCard1.setImageDrawable(mContext.getResources().getDrawable(mChosenList.get(1).getIconID()));
+        mChosenCard2.setImageDrawable(mContext.getResources().getDrawable(mChosenList.get(2).getIconID()));
     }
     public void setFinalCards(ArrayList<Card> finalList){
         mFinalList = finalList;
     }
-    public void setDBRef(DatabaseReference ref){
 
-        mDBRef = ref;
+    private void setDBListeners(){
         //setChosenListener:
         mDBRef.child("Chosen").addValueEventListener(new ValueEventListener() {
             @Override
@@ -90,6 +99,10 @@ public class TableCardsFragment extends Fragment {
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
+    }
+
+    public void setDBRef(DatabaseReference ref){
+        mDBRef = ref;
     }
 
 }
