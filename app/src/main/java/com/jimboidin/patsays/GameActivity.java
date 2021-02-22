@@ -40,7 +40,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
-    private final String TAG = "GameActivity";
+    private final String TAG = "GameActivity - debug";
     private RecyclerView mHandRecyclerView;
     private RecyclerView.Adapter mHandListAdapter;
     private ArrayList<Card> mHandList, mSelectedList;
@@ -49,13 +49,14 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private String mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
-
+    private ValueEventListener mDealtListener;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+        Log.d(TAG, "onCreate called");
 
         mAuth = FirebaseAuth.getInstance();
         mIsHost = getIntent().getBooleanExtra("is_host", false);
@@ -112,7 +113,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     }
 
     private void setupDealtListener(){
-        mCurrentGameDB.child("Players").child(mAuth.getUid())
+        mDealtListener = mCurrentGameDB.child("Players").child(mAuth.getUid())
                 .child("Cards").child("In_Hand").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -222,17 +223,21 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
 
     private void closeGameServer(){
+        System.out.println("gameserver close called");
+        if (mDealtListener != null){
+            mCurrentGameDB.child("Players").child(mAuth.getUid())
+                    .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
+        }
         if (mIsHost)
             mCurrentGameDB.removeValue(); //destroy gameServer
         else
             mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
-        finish();
     }
 
     @Override
     public void onBackPressed() {
-        closeGameServer();
         super.onBackPressed();
+        closeGameServer();
     }
 
 

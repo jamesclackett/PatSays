@@ -9,6 +9,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -29,18 +30,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class LobbyActivity extends AppCompatActivity {
-    private final String TAG = "LobbyActivity";
+    private final String TAG = "LobbyActivity - debug";
     private String mHostName;
     private FirebaseAuth mAuth;
     private ArrayList<String> mPlayerList;
     private DatabaseReference mCurrentGameDB;
     private TextView mPlayersTextView;
     private boolean mIsHost;
+    private ValueEventListener mPlayerListener, mStartListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lobby);
+        Log.d(TAG, "onCreate called ");
 
         mIsHost = getIntent().getBooleanExtra("host", false);
         mAuth = FirebaseAuth.getInstance();
@@ -56,7 +59,6 @@ public class LobbyActivity extends AppCompatActivity {
         if (mIsHost) {
             mHostName = mAuth.getUid();
             createServerGame();
-
         }
         else {
             mHostName = getIntent().getStringExtra("host_name");
@@ -65,11 +67,11 @@ public class LobbyActivity extends AppCompatActivity {
         }
     }
 
+
     private void createServerGame(){
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.child("Players").child(mHostName).setValue(true);
         setupPlayerListener();
-        //setupStartListener();
     }
 
     private void joinServerGame() {
@@ -90,12 +92,17 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void setupStartListener(){
-        mCurrentGameDB.child("Game_Info").child("start").addValueEventListener(new ValueEventListener() {
+        Log.d(TAG, "setupStartListener called");
+        mStartListener = mCurrentGameDB.child("Game_Info").child("start").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists())
-                    if (snapshot.getValue().equals(true))
+                Log.d(TAG, "startListener: onDataChange called");
+                if (snapshot.exists()){
+                    if (snapshot.getValue().equals(true)){
+                        Log.d(TAG, "startListener: startGameActivity called");
                         startGameActivity();
+                    }
+                }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -145,7 +152,7 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void setupPlayerListener(){
-        mCurrentGameDB.child("Players").addValueEventListener(new ValueEventListener() {
+        mPlayerListener = mCurrentGameDB.child("Players").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 mPlayerList.clear();
@@ -165,7 +172,7 @@ public class LobbyActivity extends AppCompatActivity {
                 }
                 else {
                     displayToast("Host has left the game");
-                    finish();
+                    closeGame();
                 }
             }
             @Override
@@ -182,19 +189,27 @@ public class LobbyActivity extends AppCompatActivity {
         finish();
     }
 
-    private void closeGame(){
-        if (mIsHost)
-            mCurrentGameDB.removeValue(); //destroy gameServer
-        else
-            mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
-        finish();
+    private void removeListeners(){
+        if (mPlayerListener != null)
+            mCurrentGameDB.child("Players").removeEventListener(mPlayerListener);
+        if (mStartListener != null)
+            mCurrentGameDB.child("Game_Info").child("start").removeEventListener(mStartListener);
     }
 
 
+    private void closeGame(){
+        removeListeners();
+        if (mIsHost)
+            mCurrentGameDB.removeValue(); //destroy gameServer
+        else{
+            mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
+        }
+    }
+
     @Override
     public void onBackPressed() {
-        closeGame();
         super.onBackPressed();
+        closeGame();
     }
 
     private void displayToast(String message) {

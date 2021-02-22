@@ -67,6 +67,7 @@ public class InvitationsActivity extends AppCompatActivity {
     private void startLobbyActivity() {
         Intent intent = new Intent(getApplicationContext(), LobbyActivity.class);
         intent.putExtra("host_name", mHostNameStr);
+        Log.d(TAG, "startLobby called");
         startActivity(intent);
         finish();
     }

@@ -15,6 +15,7 @@
         app:layout_constraintTop_toTopOf="parent"
         android:text="Choose Cards"/>
 
+
     <FrameLayout
         android:id="@+id/placeholder_2"
         android:layout_width="wrap_content"

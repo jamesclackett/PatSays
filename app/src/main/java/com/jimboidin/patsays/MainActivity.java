@@ -11,7 +11,7 @@ import android.widget.TextView;
 import com.google.firebase.auth.FirebaseAuth;
 
 public class MainActivity extends AppCompatActivity {
-    private final String TAG = "MainActivity";
+    private final String TAG = "MainActivity - debug";
     private FirebaseAuth mAuth;
 
     @Override
