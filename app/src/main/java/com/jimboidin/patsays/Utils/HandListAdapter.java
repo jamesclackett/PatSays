@@ -1,23 +1,19 @@
-package com.jimboidin.patsays.Game;
+package com.jimboidin.patsays.Utils;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
-import android.media.Image;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jimboidin.patsays.GameActivity;
+import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.R;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandListViewHolder> {
     private ArrayList<Card> mHandList, mSelectedList;

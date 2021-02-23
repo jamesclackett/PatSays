@@ -12,15 +12,9 @@
         android:layout_height="wrap_content"
         android:text="@string/invitations"
         android:textSize="25sp"/>
-    <TextView
-        android:id="@+id/invitee_text_view"
+    <ListView
+        android:id="@+id/invites_listView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="20sp"/>
-    <TextView
-        android:id="@+id/host_text_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"/>
-
+        android:dividerHeight="5sp"/>
 </LinearLayout>

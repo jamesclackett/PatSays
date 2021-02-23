@@ -8,6 +8,10 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -18,11 +22,18 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.w3c.dom.Text;
+
+import java.util.ArrayList;
+
 public class InvitationsActivity extends AppCompatActivity {
     private final String TAG = "InvitationsActivity";
-    private String mInviteeStr, mHostNameStr;
     private FirebaseAuth mAuth;
     private DatabaseReference mInvitesDB;
+    private ValueEventListener mInviteListener;
+    private ListView mInvitesListView;
+    private ArrayAdapter<String> mArrayAdapter;
+    private ArrayList<String> mInvitesList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,6 +41,11 @@ public class InvitationsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_invitations);
 
         mAuth = FirebaseAuth.getInstance();
+        mInvitesListView = findViewById(R.id.invites_listView);
+        mArrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+        mInvitesListView.setAdapter(mArrayAdapter);
+        mInvitesList = new ArrayList<>();
+
         getInvitations();
     }
 
@@ -37,14 +53,24 @@ public class InvitationsActivity extends AppCompatActivity {
         if (mAuth.getUid() != null){
             mInvitesDB = FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(mAuth.getUid()).child("Invitations");
-            mInvitesDB.addListenerForSingleValueEvent(new ValueEventListener() {
+            mInviteListener = mInvitesDB.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
                     if (snapshot.exists()){
-                        Log.d(TAG, "invite received");
-                        mHostNameStr = snapshot.child("host").getValue(String.class);
-                        mInviteeStr = snapshot.child("invitee").getValue(String.class);
-                        displayInvitation();
+                        for (DataSnapshot childData : snapshot.getChildren()){
+                            //below condition is because (host).setValue in Lobby triggers this listener
+                            //before invitee is set.
+                            if (childData.child("host").exists() && childData.child("invitee").exists()){
+                                Log.d(TAG, "invite received");
+                                System.out.println(childData);
+                                String hostNameStr = childData.child("host").getValue(String.class);
+                                String inviteeStr = childData.child("invitee").getValue(String.class);
+                                if (!mInvitesList.contains(hostNameStr)){
+                                    mInvitesList.add(hostNameStr);
+                                    displayInvitation(hostNameStr, inviteeStr);
+                                }
+                            }
+                        }
                     }
                 }
                 @Override
@@ -54,38 +80,42 @@ public class InvitationsActivity extends AppCompatActivity {
 
     }
 
-    private void displayInvitation() {
-        TextView inviteeTextView = findViewById(R.id.invitee_text_view);
-        TextView hostTextView = findViewById(R.id.host_text_view);
-
-        String message = mInviteeStr + "invited you to join: ";
-        inviteeTextView.setText(message);
-        hostTextView.setText(mHostNameStr);
-        hostTextView.setOnClickListener(v -> checkLobbyExists());
+    private void displayInvitation(String hostName, String inviteeName) {
+        System.out.println("displayInvitations called");
+        String message = inviteeName + " invited you to join: " + hostName;
+        mArrayAdapter.add(message);
+        mInvitesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                checkLobbyExists(hostName);
+            }
+        });
     }
 
-    private void startLobbyActivity() {
+    private void startLobbyActivity(String hostName) {
+        mInvitesDB.removeEventListener(mInviteListener);
         Intent intent = new Intent(getApplicationContext(), LobbyActivity.class);
-        intent.putExtra("host_name", mHostNameStr);
+        intent.putExtra("host_name", hostName);
         Log.d(TAG, "startLobby called");
         startActivity(intent);
         finish();
     }
 
-    private void checkLobbyExists() {
+    private void checkLobbyExists(String hostName) {
         DatabaseReference currentGameDB = FirebaseDatabase.getInstance().getReference().child("Games");
         currentGameDB.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.hasChild(mHostNameStr)) {
+                if (snapshot.hasChild(hostName)) {
                     Log.d(TAG, "Lobby exists: true");
-                    startLobbyActivity();
+                    startLobbyActivity(hostName);
                 }
                 else{
                     displayToast("Lobby no longer exists");
                     Log.w(TAG, "Lobby exists: false");
                 }
-                mInvitesDB.removeValue();
+                mInvitesDB.child(hostName).removeValue();
+
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
@@ -95,5 +125,11 @@ public class InvitationsActivity extends AppCompatActivity {
     private void displayToast(String message) {
         Toast.makeText(InvitationsActivity.this, message,
                 Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mInvitesDB.removeEventListener(mInviteListener);
     }
 }

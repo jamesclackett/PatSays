@@ -2,20 +2,14 @@ package com.jimboidin.patsays;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -23,21 +17,15 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.GenericTypeIndicator;
 import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.Game.Deck;
-import com.jimboidin.patsays.Game.HandListAdapter;
+import com.jimboidin.patsays.Utils.HandListAdapter;
 import com.jimboidin.patsays.Game.TableCardsFragment;
 
 import java.util.ArrayList;
 import java.lang.*;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
     private final String TAG = "GameActivity - debug";

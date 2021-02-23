@@ -137,9 +137,10 @@ public class LobbyActivity extends AppCompatActivity {
                 }
 
                 if (invitedUserID != null && myUserId != null){
-                    usersDB.child(invitedUserID).child("Invitations").child("invitee")
-                            .setValue(myUserId);
-                    usersDB.child(invitedUserID).child("Invitations").child("host").setValue(mHostName);
+                    usersDB.child(invitedUserID).child("Invitations")
+                            .child(mAuth.getUid()).child("host").setValue(mHostName);
+                    usersDB.child(invitedUserID).child("Invitations")
+                            .child(mAuth.getUid()).child("invitee").setValue(myUserId);
                     Log.d(TAG, "invite player: DB invite created");
                 } else
                     Log.w(TAG, "invite player: invitation not created");
