@@ -99,6 +99,7 @@ public class InvitationsActivity extends AppCompatActivity {
         Log.d(TAG, "startLobby called");
         startActivity(intent);
         finish();
+        //test
     }
 
     private void checkLobbyExists(String hostName) {
