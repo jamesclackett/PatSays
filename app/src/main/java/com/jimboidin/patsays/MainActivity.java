@@ -9,6 +9,8 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.jimboidin.patsays.Auth.LoginActivity;
+import com.jimboidin.patsays.Social.SocialActivity;
 
 public class MainActivity extends AppCompatActivity {
     private final String TAG = "MainActivity - debug";
@@ -32,11 +34,11 @@ public class MainActivity extends AppCompatActivity {
         createButton.setOnClickListener(v -> startLobbyActivity());
 
         Button mInvitations = findViewById(R.id.invitations_button);
-        mInvitations.setOnClickListener(v -> startInvitationsActivity());
+        mInvitations.setOnClickListener(v -> startSocialActivity());
     }
 
-    private void startInvitationsActivity(){
-        Intent intent = new Intent(getApplicationContext(), InvitationsActivity.class);
+    private void startSocialActivity(){
+        Intent intent = new Intent(getApplicationContext(), SocialActivity.class);
         startActivity(intent);
     }
 

@@ -1,4 +1,4 @@
-package com.jimboidin.patsays;
+package com.jimboidin.patsays.Auth;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
+
+import com.jimboidin.patsays.R;
 
 public class SignUpActivity extends AppCompatActivity {
     private EditText mUsernameEditText, mEmailEditText, mPasswordEditText;

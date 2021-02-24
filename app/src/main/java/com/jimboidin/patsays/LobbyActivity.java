@@ -25,19 +25,21 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.jimboidin.patsays.Social.SocialProfile;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class LobbyActivity extends AppCompatActivity {
     private final String TAG = "LobbyActivity - debug";
-    private String mHostName, myUsername;
+    private String mHostName;
     private FirebaseAuth mAuth;
     private ArrayList<String> mPlayerList;
     private DatabaseReference mCurrentGameDB;
     private TextView mPlayersTextView;
     private boolean mIsHost;
     private ValueEventListener mPlayerListener, mStartListener;
+    private SocialProfile mSocial;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +49,7 @@ public class LobbyActivity extends AppCompatActivity {
 
         mIsHost = getIntent().getBooleanExtra("host", false);
         mAuth = FirebaseAuth.getInstance();
+        mSocial = new SocialProfile(mAuth.getUid());
         mPlayerList = new ArrayList<>();
         mPlayersTextView = findViewById(R.id.player_list);
 
@@ -54,8 +57,6 @@ public class LobbyActivity extends AppCompatActivity {
         startButton.setOnClickListener(v -> startReady());
         Button inviteButton = findViewById(R.id.invite_button);
         inviteButton.setOnClickListener(v -> openInviteDialog());
-
-        getMyUsername();
 
 
         if (mIsHost) {
@@ -67,21 +68,6 @@ public class LobbyActivity extends AppCompatActivity {
             startButton.setEnabled(false);
             joinServerGame();
         }
-    }
-
-    private void getMyUsername(){
-        DatabaseReference usernameDB = FirebaseDatabase.getInstance()
-                .getReference().child("Users").child(mAuth.getUid()).child("username");
-        usernameDB.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists())
-                    myUsername = snapshot.getValue(String.class);
-
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
     }
 
 
@@ -141,30 +127,7 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void invitePlayer(String name){
-        DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-        usersDB.orderByChild("username").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String invitedUserID = null;
-                for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                    invitedUserID = childDataSnapshot.getKey();
-                    Log.d(TAG, "invite player: user found");
-                }
-
-                if (invitedUserID != null && myUsername != null){
-                    usersDB.child(invitedUserID).child("Invitations")
-                            .child(mAuth.getUid()).child("host").setValue(mHostName);
-                    usersDB.child(invitedUserID).child("Invitations")
-                            .child(mAuth.getUid()).child("invitee").setValue(myUsername);
-                    Log.d(TAG, "invite player: DB invite created");
-                } else
-                    Log.w(TAG, "invite player: invitation not created");
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+        mSocial.invite(mSocial.getUsername(), mHostName, name);
     }
 
     private void setupPlayerListener(){

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:layout_margin="20dp"
     android:orientation="vertical"
-    tools:context=".SignUpActivity">
+    tools:context=".Auth.SignUpActivity">
 
     <EditText
         android:id="@+id/new_username_edit_text"

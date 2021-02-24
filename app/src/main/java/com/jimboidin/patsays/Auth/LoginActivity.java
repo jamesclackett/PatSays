@@ -1,4 +1,4 @@
-package com.jimboidin.patsays;
+package com.jimboidin.patsays.Auth;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,6 +22,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.jimboidin.patsays.MainActivity;
+import com.jimboidin.patsays.R;
 
 public class LoginActivity extends AppCompatActivity {
     private final String TAG = "LoginActivity";

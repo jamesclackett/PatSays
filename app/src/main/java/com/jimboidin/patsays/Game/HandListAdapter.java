@@ -1,4 +1,4 @@
-package com.jimboidin.patsays.Utils;
+package com.jimboidin.patsays.Game;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
@@ -10,7 +10,6 @@ import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.R;
 
 import java.util.ArrayList;

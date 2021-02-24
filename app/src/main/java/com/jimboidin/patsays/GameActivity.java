@@ -22,7 +22,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.Game.Deck;
-import com.jimboidin.patsays.Utils.HandListAdapter;
+import com.jimboidin.patsays.Game.HandListAdapter;
 import com.jimboidin.patsays.Game.TableCardsFragment;
 
 import java.util.ArrayList;
