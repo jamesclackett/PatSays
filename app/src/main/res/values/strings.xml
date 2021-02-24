@@ -12,4 +12,6 @@
     <string name="game_lobby">Game Lobby</string>
     <string name="players">players:</string>
     <string name="invite_players">Invite Players</string>
+    <string name="continue_button">continue</string>
+    <string name="username">Username</string>
 </resources>

@@ -80,7 +80,8 @@ public class LoginActivity extends AppCompatActivity {
                 if (resultCode == Activity.RESULT_OK) {
                     String email = bundle.getString("email");
                     String password = bundle.getString("password");
-                    signUpNewUser(email, password);
+                    String username = bundle.getString("username");
+                    signUpNewUser(username, email, password);
                 }
                 if (resultCode == Activity.RESULT_CANCELED) {
                     Log.w(TAG, "sign up: cancelled");
@@ -90,13 +91,13 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    private void signUpNewUser(String email, String password) {
+    private void signUpNewUser(String username, String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful() && mAuth.getUid() != null) {
-                            createUserDB(email);
+                            createUserDB(username, email);
                             Log.d(TAG, "sign up user: success");
                         } else {
                             Log.w(TAG, "sign up user: failure", task.getException());
@@ -114,7 +115,7 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
-                            createUserDB(email);
+                            createUserDB(email, email);
                             Log.d(TAG, "sign in user: success");
                         } else {
                             Log.w(TAG, "sign in user: failure", task.getException());
@@ -124,12 +125,13 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
-    private void createUserDB(String email) {
+    private void createUserDB(String username, String email) {
         mUserDB.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (!snapshot.hasChild(mAuth.getUid())){
-                    mUserDB.child(mAuth.getUid()).child("name").setValue(email);
+                    mUserDB.child(mAuth.getUid()).child("email").setValue(email);
+                    mUserDB.child(mAuth.getUid()).child("username").setValue(username);
                 }
             }
 

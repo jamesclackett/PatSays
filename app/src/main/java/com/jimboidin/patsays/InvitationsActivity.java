@@ -99,7 +99,6 @@ public class InvitationsActivity extends AppCompatActivity {
         Log.d(TAG, "startLobby called");
         startActivity(intent);
         finish();
-        //test
     }
 
     private void checkLobbyExists(String hostName) {
@@ -116,6 +115,7 @@ public class InvitationsActivity extends AppCompatActivity {
                     Log.w(TAG, "Lobby exists: false");
                 }
                 mInvitesDB.child(hostName).removeValue();
+                mArrayAdapter.notifyDataSetChanged();
 
             }
             @Override
@@ -133,4 +133,5 @@ public class InvitationsActivity extends AppCompatActivity {
         super.onBackPressed();
         mInvitesDB.removeEventListener(mInviteListener);
     }
+
 }

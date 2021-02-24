@@ -9,14 +9,14 @@ import android.widget.Button;
 import android.widget.EditText;
 
 public class SignUpActivity extends AppCompatActivity {
-    private EditText mEmailEditText;
-    private EditText mPasswordEditText;
+    private EditText mUsernameEditText, mEmailEditText, mPasswordEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
+        mUsernameEditText = findViewById(R.id.new_username_edit_text);
         mEmailEditText = findViewById(R.id.new_email_edit_text);
         mPasswordEditText = findViewById(R.id.new_password_edit_text);
 
@@ -24,8 +24,10 @@ public class SignUpActivity extends AppCompatActivity {
         registerButton.setOnClickListener(v -> register());
     }
 
+
     private void register() {
         Bundle bundle = new Bundle();
+        bundle.putString("username", mUsernameEditText.getText().toString());
         bundle.putString("email", mEmailEditText.getText().toString());
         bundle.putString("password", mPasswordEditText.getText().toString());
 

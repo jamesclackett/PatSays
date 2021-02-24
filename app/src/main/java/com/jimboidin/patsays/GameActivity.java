@@ -1,6 +1,7 @@
 package com.jimboidin.patsays;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -13,6 +14,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -38,6 +40,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
     private ValueEventListener mDealtListener;
+    private ChildEventListener mPlayerLeftListener;
 
 
     @Override
@@ -56,6 +59,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
         setupMyFragment();
         setupOpponentFragments();
+        setupPlayerLeftListener();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
         chooseButton.setOnClickListener(v -> placeChosenCards());
@@ -216,16 +220,41 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             mCurrentGameDB.child("Players").child(mAuth.getUid())
                     .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
         }
+        mCurrentGameDB.child("Players").removeEventListener(mPlayerLeftListener);
         if (mIsHost)
             mCurrentGameDB.removeValue(); //destroy gameServer
         else
             mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
+        finish();
+    }
+
+    private void setupPlayerLeftListener(){
+        mPlayerLeftListener = mCurrentGameDB.child("Players").addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
+            @Override
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
+                displayToast("Player Left - Ending Game..");
+                closeGameServer();
+            }
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
     }
 
     @Override
     public void onBackPressed() {
         super.onBackPressed();
         closeGameServer();
+    }
+
+    private void displayToast(String message) {
+        Toast.makeText(GameActivity.this, message,
+                Toast.LENGTH_SHORT).show();
     }
 
 

@@ -31,7 +31,7 @@ import java.util.HashMap;
 
 public class LobbyActivity extends AppCompatActivity {
     private final String TAG = "LobbyActivity - debug";
-    private String mHostName;
+    private String mHostName, myUsername;
     private FirebaseAuth mAuth;
     private ArrayList<String> mPlayerList;
     private DatabaseReference mCurrentGameDB;
@@ -55,6 +55,8 @@ public class LobbyActivity extends AppCompatActivity {
         Button inviteButton = findViewById(R.id.invite_button);
         inviteButton.setOnClickListener(v -> openInviteDialog());
 
+        getMyUsername();
+
 
         if (mIsHost) {
             mHostName = mAuth.getUid();
@@ -65,6 +67,21 @@ public class LobbyActivity extends AppCompatActivity {
             startButton.setEnabled(false);
             joinServerGame();
         }
+    }
+
+    private void getMyUsername(){
+        DatabaseReference usernameDB = FirebaseDatabase.getInstance()
+                .getReference().child("Users").child(mAuth.getUid()).child("username");
+        usernameDB.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists())
+                    myUsername = snapshot.getValue(String.class);
+
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
     }
 
 
@@ -124,10 +141,8 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void invitePlayer(String name){
-        String myUserId = mAuth.getCurrentUser().getEmail();
-
         DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-        usersDB.orderByChild("name").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
+        usersDB.orderByChild("username").equalTo(name).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 String invitedUserID = null;
@@ -136,11 +151,11 @@ public class LobbyActivity extends AppCompatActivity {
                     Log.d(TAG, "invite player: user found");
                 }
 
-                if (invitedUserID != null && myUserId != null){
+                if (invitedUserID != null && myUsername != null){
                     usersDB.child(invitedUserID).child("Invitations")
                             .child(mAuth.getUid()).child("host").setValue(mHostName);
                     usersDB.child(invitedUserID).child("Invitations")
-                            .child(mAuth.getUid()).child("invitee").setValue(myUserId);
+                            .child(mAuth.getUid()).child("invitee").setValue(myUsername);
                     Log.d(TAG, "invite player: DB invite created");
                 } else
                     Log.w(TAG, "invite player: invitation not created");
@@ -187,6 +202,7 @@ public class LobbyActivity extends AppCompatActivity {
         intent.putExtra("is_host", mIsHost);
         intent.putStringArrayListExtra("player_list", mPlayerList);
         startActivity(intent);
+        removeListeners();
         finish();
     }
 
@@ -205,6 +221,7 @@ public class LobbyActivity extends AppCompatActivity {
         else{
             mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
         }
+        finish(); // to make sure when host leaves, players do not stay in lobby
     }
 
     @Override
