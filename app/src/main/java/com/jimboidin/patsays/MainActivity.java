@@ -33,8 +33,8 @@ public class MainActivity extends AppCompatActivity {
         Button createButton = findViewById(R.id.create_button);
         createButton.setOnClickListener(v -> startLobbyActivity());
 
-        Button mInvitations = findViewById(R.id.invitations_button);
-        mInvitations.setOnClickListener(v -> startSocialActivity());
+        Button mSocial = findViewById(R.id.social_button);
+        mSocial.setOnClickListener(v -> startSocialActivity());
     }
 
     private void startSocialActivity(){
@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     private void startLobbyActivity() {
         Intent intent = new Intent(getApplicationContext(), LobbyActivity.class);
         intent.putExtra("host", true);
+        intent.putExtra("host_name", mAuth.getUid());
         startActivity(intent);
     }
 
