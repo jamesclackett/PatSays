@@ -15,6 +15,4 @@
     <string name="continue_button">continue</string>
     <string name="username">Username</string>
     <string name="social">social</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

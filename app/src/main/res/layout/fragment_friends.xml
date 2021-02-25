@@ -1,13 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".Social.FriendsFragment">
 
     <TextView
+        android:id="@+id/requests_title"
+        app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Friends fragment" />
+        android:layout_height="wrap_content"
+        android:text="Friend Requests:" />
 
-</LinearLayout>
+    <ListView
+        android:id="@+id/requests_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/requests_title"/>
+
+    <TextView
+        android:id="@+id/friends_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Friends"
+        app:layout_constraintTop_toBottomOf="@id/requests_list_view"/>
+
+    <ListView
+        android:id="@+id/friends_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/friends_title"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
