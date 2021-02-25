@@ -36,12 +36,14 @@ public class InvitationsFragment extends Fragment {
     private ValueEventListener mInviteListener;
     private ListView mInvitesListView;
     private ArrayAdapter<String> mArrayAdapter;
-    private ArrayList<String> mInvitesList;
+    private LeaveSocialListener listener;
+
+    public interface LeaveSocialListener{
+        void onLeave();
+    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_invitations, container, false);
     }
 
@@ -49,6 +51,7 @@ public class InvitationsFragment extends Fragment {
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         mContext = context;
+        listener = (LeaveSocialListener) context;
     }
 
     @Override
@@ -58,66 +61,59 @@ public class InvitationsFragment extends Fragment {
         mInvitesListView = getView().findViewById(R.id.invites_listView);
         mArrayAdapter = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1);
         mInvitesListView.setAdapter(mArrayAdapter);
-        mInvitesList = new ArrayList<>();
 
         getInvitations();
     }
 
     private void getInvitations() {
-        if (mAuth.getUid() != null){
-            mInvitesDB = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(mAuth.getUid()).child("Invitations");
-            mInviteListener = mInvitesDB.addValueEventListener(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    if (snapshot.exists()){
-                        for (DataSnapshot childData : snapshot.getChildren()){
-                            //below condition is because (host).setValue in Lobby triggers this listener
-                            //before invitee is set.
-                            if (childData.child("host").exists() && childData.child("invitee").exists()){
-                                Log.i(TAG, "invite received");
-                                String hostNameStr = childData.child("host").getValue(String.class);
-                                String inviteeStr = childData.child("invitee").getValue(String.class);
-                                if (!mInvitesList.contains(hostNameStr)){ //TODO - look into this
-                                    mInvitesList.add(hostNameStr);
-                                    displayInvitation(hostNameStr, inviteeStr);
-                                }
-                            }
+        mInvitesDB = FirebaseDatabase.getInstance().getReference()
+                .child("Users").child(mAuth.getUid()).child("Invitations");
+        mInviteListener = mInvitesDB.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mArrayAdapter.clear();
+                if (snapshot.exists())
+                    for (DataSnapshot childData : snapshot.getChildren())
+                        if (childData.child("host").exists() && childData.child("invitee").exists()){
+
+                            String hostNameStr = childData.child("host").getValue(String.class);
+                            String inviteeStr = childData.child("invitee").getValue(String.class);
+
+                            addInvitation(hostNameStr, inviteeStr);
                         }
-                    }
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) {}
-            });
-        }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
     }
 
-    private void displayInvitation(String hostName, String inviteeName) {
+    private void addInvitation(String hostName, String inviteeName) {
         String message = inviteeName + " invited you to join: " + hostName;
         mArrayAdapter.add(message);
         mInvitesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                checkLobbyExists(hostName, message);
+                checkLobbyExists(hostName);
+                mInvitesDB.child(hostName).removeValue();
+                mArrayAdapter.remove(message);
             }
         });
+        Log.i(TAG, "Invite added to ListView");
     }
 
-    private void checkLobbyExists(String hostName, String message) {
+    private void checkLobbyExists(String hostName) {
         DatabaseReference currentGameDB = FirebaseDatabase.getInstance().getReference().child("Games");
         currentGameDB.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.hasChild(hostName)) {
-                    Log.i(TAG, "Lobby exists: true");
                     startLobbyActivity(hostName);
+                    Log.i(TAG, "Lobby exists: true");
                 }
                 else{
                     displayToast("Lobby no longer exists");
                     Log.i(TAG, "Lobby exists: false");
                 }
-                mInvitesDB.child(hostName).removeValue();
-                mArrayAdapter.remove(message);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
@@ -125,12 +121,12 @@ public class InvitationsFragment extends Fragment {
     }
 
     private void startLobbyActivity(String hostName) {
-        mInvitesDB.removeEventListener(mInviteListener);
+        removeListeners();
         Intent intent = new Intent(mContext, LobbyActivity.class);
         intent.putExtra("host_name", hostName);
-        //TODO - add flags to close this fragment & Social Activity
         Log.i(TAG, "startLobby called");
         startActivity(intent);
+        listener.onLeave();
     }
 
     private void displayToast(String message) {
@@ -138,5 +134,14 @@ public class InvitationsFragment extends Fragment {
                 Toast.LENGTH_SHORT).show();
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        removeListeners();
+    }
 
+    private void removeListeners() {
+        if (mInviteListener != null)
+            mInvitesDB.removeEventListener(mInviteListener);
+    }
 }
