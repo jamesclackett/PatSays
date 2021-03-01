@@ -52,4 +52,6 @@ public class SocialActivity extends AppCompatActivity implements InvitationsFrag
     public void onLeave() {
         finish();
     }
+
+
 }

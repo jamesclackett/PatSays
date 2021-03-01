@@ -156,32 +156,39 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
     private void invitePlayer(String inviteInput){
-        DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-        usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                String invitedUserID = null;
-                for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                    invitedUserID = childDataSnapshot.getKey();
-                    Log.d(TAG, "invite player: user found");
-                }
+        if (!inviteInput.equals(mUsername)){
+            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
+            usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    String invitedUserID = null;
+                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                        invitedUserID = childDataSnapshot.getKey();
+                        Log.d(TAG, "invite player: user found");
+                    }
 
-                if (invitedUserID != null && mUsername != null){
-                    usersDB.child(invitedUserID).child("Invitations")
-                            .child(mAuth.getUid()).child("host").setValue(mHostName);
-                    usersDB.child(invitedUserID).child("Invitations")
-                            .child(mAuth.getUid()).child("invitee").setValue(mUsername);
-                    Log.d(TAG, "invite player: DB invite created");
-                } else{
-                    displayToast("Invitation not sent - try again");
-                    Log.w(TAG, "invite player: unsuccessful. invited=" + invitedUserID
-                            + ", username=" + mUsername);
-                }
+                    if (invitedUserID != null && mUsername != null){
+                        usersDB.child(invitedUserID).child("Invitations")
+                                .child(mAuth.getUid()).child("host").setValue(mHostName);
+                        usersDB.child(invitedUserID).child("Invitations")
+                                .child(mAuth.getUid()).child("invitee").setValue(mUsername);
+                        Log.d(TAG, "invite player: DB invite created");
+                    } else{
+                        displayToast("Invitation not sent - try again");
+                        Log.w(TAG, "invite player: unsuccessful. invited=" + invitedUserID
+                                + ", username=" + mUsername);
+                    }
 
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) { }
+            });
+        }
+        else {
+            Log.i(TAG, "Invited self to game - discard" );
+            displayToast("You cannot invite yourself to a game");
+        }
+
     }
 
 

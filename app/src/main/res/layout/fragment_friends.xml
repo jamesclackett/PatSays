@@ -11,25 +11,36 @@
         app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Friend Requests:" />
+        android:text="Friend Requests:"
+        android:visibility="gone"/>
 
     <ListView
         android:id="@+id/requests_list_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/requests_title"/>
+        app:layout_constraintTop_toBottomOf="@id/requests_title" />
 
     <TextView
         android:id="@+id/friends_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Friends"
-        app:layout_constraintTop_toBottomOf="@id/requests_list_view"/>
+        app:layout_constraintTop_toBottomOf="@id/requests_list_view"
+        android:visibility="gone"/>
 
     <ListView
         android:id="@+id/friends_list_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/friends_title"/>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/add_friend_fab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:src="@drawable/ic_add_friend"
+        android:layout_margin="20dp"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

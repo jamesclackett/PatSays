@@ -22,10 +22,9 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.LobbyActivity;
 import com.jimboidin.patsays.R;
-
-import java.util.ArrayList;
 
 
 public class InvitationsFragment extends Fragment {
@@ -35,7 +34,7 @@ public class InvitationsFragment extends Fragment {
     private DatabaseReference mInvitesDB;
     private ValueEventListener mInviteListener;
     private ListView mInvitesListView;
-    private ArrayAdapter<String> mArrayAdapter;
+    private ArrayAdapter<Invite> mArrayAdapter;
     private LeaveSocialListener listener;
 
     public interface LeaveSocialListener{
@@ -58,11 +57,25 @@ public class InvitationsFragment extends Fragment {
     public void onStart() {
         super.onStart();
         mAuth = FirebaseAuth.getInstance();
+        initializeInviteListView();
+
+        getInvitations();
+    }
+
+    private void initializeInviteListView() {
         mInvitesListView = getView().findViewById(R.id.invites_listView);
         mArrayAdapter = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1);
         mInvitesListView.setAdapter(mArrayAdapter);
 
-        getInvitations();
+        mInvitesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Invite invite = (Invite) parent.getItemAtPosition(position);
+                String hostName = invite.getHostName();
+                checkLobbyExists(hostName);
+                mInvitesDB.child(hostName).removeValue();
+            }
+        });
     }
 
     private void getInvitations() {
@@ -71,6 +84,7 @@ public class InvitationsFragment extends Fragment {
         mInviteListener = mInvitesDB.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                System.out.println("Invites: onDataChange invite triggered!!");
                 mArrayAdapter.clear();
                 if (snapshot.exists())
                     for (DataSnapshot childData : snapshot.getChildren())
@@ -79,7 +93,7 @@ public class InvitationsFragment extends Fragment {
                             String hostNameStr = childData.child("host").getValue(String.class);
                             String inviteeStr = childData.child("invitee").getValue(String.class);
 
-                            addInvitation(hostNameStr, inviteeStr);
+                            addInvitation(inviteeStr, hostNameStr);
                         }
             }
             @Override
@@ -87,17 +101,10 @@ public class InvitationsFragment extends Fragment {
         });
     }
 
-    private void addInvitation(String hostName, String inviteeName) {
-        String message = inviteeName + " invited you to join: " + hostName;
-        mArrayAdapter.add(message);
-        mInvitesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                checkLobbyExists(hostName);
-                mInvitesDB.child(hostName).removeValue();
-                mArrayAdapter.remove(message);
-            }
-        });
+
+    private void addInvitation(String inviteeName, String hostName) {
+        Invite invite = new Invite(inviteeName, hostName);
+        mArrayAdapter.add(invite);
         Log.i(TAG, "Invite added to ListView");
     }
 
@@ -144,4 +151,20 @@ public class InvitationsFragment extends Fragment {
         if (mInviteListener != null)
             mInvitesDB.removeEventListener(mInviteListener);
     }
+}
+
+class Invite{
+    private final String inviteeName, hostName, message;
+
+    public Invite(String inviteeName, String hostName){
+        this.inviteeName = inviteeName;
+        this.hostName = hostName;
+        this.message = inviteeName + " invited you to join: " + hostName;
+    }
+    public String getInviteeName() { return inviteeName; }
+    public String getHostName() { return hostName; }
+    public String getMessage() { return message; }
+    @NonNull
+    @Override
+    public String toString() { return message; }
 }
