@@ -45,7 +45,7 @@ public class FriendsFragment extends Fragment {
     private DatabaseReference mFriendsDB, mRequestsDB;
     private ValueEventListener mFriendsListener, mRequestsListener;
     private ListView mFriendsListView, mRequestsListView;
-    private ArrayAdapter<String> mFriendAdapter, mRequestAdapter;
+    private ArrayAdapter<User> mFriendAdapter, mRequestAdapter;
     private HashMap<String, String> mRequestIDMap, mFriendsIDMap;
     private String mUsername;
 
@@ -129,42 +129,49 @@ public class FriendsFragment extends Fragment {
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        String name = ((TextView) info.targetView).getText().toString();
+        Log.i(TAG, String.valueOf(info.position));
+        //get adapter position  -> request/friend obj here
 
-        if (item.getItemId() == R.id.accept_friend)
-            acceptFriendRequest(name, true);
-        else if (item.getItemId() == R.id.decline_friend)
-            acceptFriendRequest(name, false);
-        else if (item.getItemId() == R.id.invite_friend)
-            inviteToGame(name);
-        else if (item.getItemId() == R.id.remove_friend)
-            removeFriend(name);
-
+        if (item.getItemId() == R.id.accept_friend){
+            User user = (User) mRequestsListView.getAdapter().getItem(info.position);
+            acceptFriendRequest(user, true);
+        }
+        else if (item.getItemId() == R.id.decline_friend){
+            User user = (User) mRequestsListView.getAdapter().getItem(info.position);
+            acceptFriendRequest(user, false);
+        }
+        else if (item.getItemId() == R.id.invite_friend){
+            User user = (User) mFriendsListView.getAdapter().getItem(info.position);
+            inviteToGame(user);
+        }
+        else if (item.getItemId() == R.id.remove_friend){
+            User user = (User) mFriendsListView.getAdapter().getItem(info.position);
+            removeFriend(user);
+        }
         return super.onContextItemSelected(item);
     }
 
-    private void removeFriend(String name) {
+    private void removeFriend(User user) {
+        //mFriendsDB
     }
 
-    private void inviteToGame(String name) {
+    private void inviteToGame(User user) {
     }
 
-    private void acceptFriendRequest(String name, boolean isAccept) {
-        Log.i(TAG, name + ". Accept Request: " + isAccept);
-        String key = mRequestIDMap.get(name);
+    private void acceptFriendRequest(User user, boolean isAccept) {
+        Log.i(TAG, user + ". Accept Request: " + isAccept);
 
         if (isAccept){
-            mFriendsDB.child(key).child("username").setValue(name);
+            mFriendsDB.child(user.getId()).child("username").setValue(user.getUsername());
             FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(key).child("Friends")
+                    .child("Users").child(user.getId()).child("Friends")
                     .child(mAuth.getUid()).child("username").setValue(mUsername);
         }
 
-        mRequestsDB.child(key).removeValue();
+        mRequestsDB.child(user.getId()).removeValue();
     }
 
     private void getFriendsList(){
-        mFriendsIDMap = new HashMap<>();
         mFriendsDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Friends");
         mFriendsListener = mFriendsDB.addValueEventListener(new ValueEventListener() {
@@ -175,9 +182,8 @@ public class FriendsFragment extends Fragment {
                     for (DataSnapshot childData : snapshot.getChildren()){
                         getView().findViewById(R.id.friends_title).setVisibility(View.VISIBLE);
                         String username = childData.child("username").getValue(String.class);
-                        mFriendAdapter.add(username);
-                        mFriendsIDMap.put(username, childData.getKey());
-                        //IDMap saves having to add both key and name to adapter. Not clever but hey its simple
+                        User user = new User(username, childData.getKey());
+                        mFriendAdapter.add(user);
                     }
                 if (mFriendAdapter.isEmpty())
                     getView().findViewById(R.id.friends_title).setVisibility(View.GONE);
@@ -199,8 +205,8 @@ public class FriendsFragment extends Fragment {
                     for (DataSnapshot childData: snapshot.getChildren()) {
                         getView().findViewById(R.id.requests_title).setVisibility(View.VISIBLE);
                         String username = childData.child("username").getValue(String.class);
-                        mRequestAdapter.add(username);
-                        mRequestIDMap.put(username, childData.getKey());
+                        User user = new User(username, childData.getKey());
+                        mRequestAdapter.add(user);
                     }
                 if (mRequestAdapter.isEmpty())
                     getView().findViewById(R.id.requests_title).setVisibility(View.GONE);
@@ -278,4 +284,19 @@ public class FriendsFragment extends Fragment {
         super.onDestroy();
         removeListeners();
     }
+}
+
+class User {
+    private final String username, id;
+
+    public User(String username, String id){
+        this.username = username;
+        this.id = id;
+    }
+
+    public String getUsername() { return username; }
+    public String getId() { return id; }
+    @NonNull
+    @Override
+    public String toString() { return getUsername(); }
 }
