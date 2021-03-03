@@ -1,5 +1,6 @@
 package com.jimboidin.patsays.Social;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -7,15 +8,18 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -30,16 +34,15 @@ import com.jimboidin.patsays.R;
 public class InvitationsFragment extends Fragment {
     private Context mContext;
     private final String TAG = "InvitationsFragment";
+    private String mUsername, mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mInvitesDB;
     private ValueEventListener mInviteListener;
     private ListView mInvitesListView;
     private ArrayAdapter<Invite> mArrayAdapter;
-    private LeaveSocialListener listener;
-
-    public interface LeaveSocialListener{
-        void onLeave();
-    }
+    private LeaveSocialListener mLeaveListener;
+    private LobbyListener mLobbyListener;
+    private Boolean mInLobby;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -50,16 +53,42 @@ public class InvitationsFragment extends Fragment {
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         mContext = context;
-        listener = (LeaveSocialListener) context;
+        mLeaveListener = (LeaveSocialListener) context;
+        mLobbyListener = (LobbyListener) context;
+
     }
 
     @Override
     public void onStart() {
         super.onStart();
         mAuth = FirebaseAuth.getInstance();
+        mInLobby = mLobbyListener.askIsLobby();
+        if (mInLobby){
+            Log.i(TAG, "interface worked!");
+            mHostName = mLobbyListener.getHostName();
+        }
+
+        FloatingActionButton fab = getView().findViewById(R.id.invite_by_name_button);
+        if (!mInLobby)
+            fab.setVisibility(View.GONE);
+        fab.setOnClickListener(v -> openInviteDialog());
         initializeInviteListView();
 
+        getMyUsername();
         getInvitations();
+    }
+
+    private void getMyUsername(){
+        FirebaseDatabase.getInstance().getReference().child("Users")
+                .child(mAuth.getUid()).child("username").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists())
+                    mUsername = snapshot.getValue(String.class);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
     }
 
     private void initializeInviteListView() {
@@ -133,7 +162,7 @@ public class InvitationsFragment extends Fragment {
         intent.putExtra("host_name", hostName);
         Log.i(TAG, "startLobby called");
         startActivity(intent);
-        listener.onLeave();
+        mLeaveListener.onLeave();
     }
 
     private void displayToast(String message) {
@@ -150,6 +179,55 @@ public class InvitationsFragment extends Fragment {
     private void removeListeners() {
         if (mInviteListener != null)
             mInvitesDB.removeEventListener(mInviteListener);
+    }
+
+    private void openInviteDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle("Invite");
+
+        final EditText input = new EditText(mContext);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", (dialog, which) -> invitePlayer(input.getText().toString()));
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void invitePlayer(String inviteInput){
+        if (!inviteInput.equals(mUsername)){
+            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
+            usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    String invitedUserID = null;
+                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                        invitedUserID = childDataSnapshot.getKey();
+                        Log.d(TAG, "invite player: user found");
+                    }
+
+                    if (invitedUserID != null && mUsername != null){
+                        usersDB.child(invitedUserID).child("Invitations")
+                                .child(mAuth.getUid()).child("host").setValue(mHostName);
+                        usersDB.child(invitedUserID).child("Invitations")
+                                .child(mAuth.getUid()).child("invitee").setValue(mUsername);
+                        Log.d(TAG, "invite player: DB invite created");
+                    } else{
+                        displayToast("Invitation not sent - try again");
+                        Log.w(TAG, "invite player: unsuccessful. invited=" + invitedUserID
+                                + ", username=" + mUsername);
+                    }
+
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) { }
+            });
+        }
+        else {
+            Log.i(TAG, "Invited self to game - discard" );
+            displayToast("You cannot invite yourself to a game");
+        }
+
     }
 }
 

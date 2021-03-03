@@ -19,6 +19,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.jimboidin.patsays.Social.SocialActivity;
 
 import java.util.ArrayList;
 
@@ -47,7 +48,7 @@ public class LobbyActivity extends AppCompatActivity {
         Button startButton = findViewById(R.id.start_button);
         startButton.setOnClickListener(v -> hostStartGame());
         Button inviteButton = findViewById(R.id.invite_button);
-        inviteButton.setOnClickListener(v -> openInviteDialog());
+        inviteButton.setOnClickListener(v -> startSocialActivity());
 
         if (mIsHost)
             createGameServer(); //host creates and sets up the game server
@@ -56,6 +57,7 @@ public class LobbyActivity extends AppCompatActivity {
             joinGameServer(); //non-host players join the server setup by host's application
         }
     }
+
 
     private void getMyUsername(){
         FirebaseDatabase.getInstance().getReference().child("Users")
@@ -142,56 +144,6 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
 
-    private void openInviteDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Invite");
-
-        final EditText input = new EditText(this);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", (dialog, which) -> invitePlayer(input.getText().toString()));
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        builder.show();
-    }
-
-    private void invitePlayer(String inviteInput){
-        if (!inviteInput.equals(mUsername)){
-            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-            usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    String invitedUserID = null;
-                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                        invitedUserID = childDataSnapshot.getKey();
-                        Log.d(TAG, "invite player: user found");
-                    }
-
-                    if (invitedUserID != null && mUsername != null){
-                        usersDB.child(invitedUserID).child("Invitations")
-                                .child(mAuth.getUid()).child("host").setValue(mHostName);
-                        usersDB.child(invitedUserID).child("Invitations")
-                                .child(mAuth.getUid()).child("invitee").setValue(mUsername);
-                        Log.d(TAG, "invite player: DB invite created");
-                    } else{
-                        displayToast("Invitation not sent - try again");
-                        Log.w(TAG, "invite player: unsuccessful. invited=" + invitedUserID
-                                + ", username=" + mUsername);
-                    }
-
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) { }
-            });
-        }
-        else {
-            Log.i(TAG, "Invited self to game - discard" );
-            displayToast("You cannot invite yourself to a game");
-        }
-
-    }
-
-
 
     private void startGameActivity() {
         Intent intent = new Intent(this, GameActivity.class);
@@ -201,6 +153,13 @@ public class LobbyActivity extends AppCompatActivity {
         startActivity(intent);
         removeListeners();
         finish();
+    }
+
+    private void startSocialActivity() {
+        Intent intent = new Intent(this, SocialActivity.class);
+        intent.putExtra("in_lobby", true);
+        intent.putExtra("host_name", mHostName);
+        startActivity(intent);
     }
 
     private void removeListeners(){

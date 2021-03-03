@@ -12,13 +12,19 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.jimboidin.patsays.R;
 
-public class SocialActivity extends AppCompatActivity implements InvitationsFragment.LeaveSocialListener {
+public class SocialActivity extends AppCompatActivity implements LeaveSocialListener,
+        LobbyListener {
     private final String TAG = "SocialActivity";
+    private Boolean mInLobby;
+    private String mHostName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_social);
+        mInLobby = getIntent().getBooleanExtra("in_lobby", false);
+        mHostName = getIntent().getStringExtra("host_name");
+
 
         SocialPagerAdapter socialPagerAdapter = new SocialPagerAdapter(getSupportFragmentManager(), getLifecycle());
         ViewPager2 pager = findViewById(R.id.social_pager);
@@ -51,6 +57,17 @@ public class SocialActivity extends AppCompatActivity implements InvitationsFrag
     @Override
     public void onLeave() {
         finish();
+    }
+
+
+    @Override
+    public Boolean askIsLobby() {
+        return mInLobby;
+    }
+
+    @Override
+    public String getHostName() {
+        return mHostName;
     }
 
 

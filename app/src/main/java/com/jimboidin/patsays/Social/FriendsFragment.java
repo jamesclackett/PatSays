@@ -46,8 +46,10 @@ public class FriendsFragment extends Fragment {
     private ValueEventListener mFriendsListener, mRequestsListener;
     private ListView mFriendsListView, mRequestsListView;
     private ArrayAdapter<User> mFriendAdapter, mRequestAdapter;
-    private HashMap<String, String> mRequestIDMap, mFriendsIDMap;
-    private String mUsername;
+    private String mUsername, mHostName;
+    private LobbyListener mLobbyListener;
+    private Boolean mInLobby;
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -58,6 +60,7 @@ public class FriendsFragment extends Fragment {
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         mContext = context;
+        mLobbyListener = (LobbyListener) context;
     }
 
 
@@ -66,6 +69,11 @@ public class FriendsFragment extends Fragment {
         super.onStart();
         if (getView() != null){
             mAuth = FirebaseAuth.getInstance();
+            mInLobby = mLobbyListener.askIsLobby();
+            if (mInLobby){
+                Log.i(TAG, "interface worked!");
+                mHostName = mLobbyListener.getHostName();
+            }
 
             getMyUsername();
             initializeListViews();
@@ -118,8 +126,11 @@ public class FriendsFragment extends Fragment {
         menu.setHeaderTitle(name);
         menu.setHeaderIcon(R.drawable.ic_add_friend);
 
-        if (v.getId() == R.id.friends_list_view){
+        if (v.getId() == R.id.friends_list_view && mInLobby){
             inflater.inflate(R.menu.friends_menu, menu);
+        }
+        if (v.getId() == R.id.friends_list_view && !mInLobby){
+            inflater.inflate(R.menu.friends_menu_noinv, menu);
         }
         if (v.getId() == R.id.requests_list_view){
             inflater.inflate(R.menu.requests_menu, menu);
@@ -129,8 +140,7 @@ public class FriendsFragment extends Fragment {
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-        Log.i(TAG, String.valueOf(info.position));
-        //get adapter position  -> request/friend obj here
+        //TODO - Find a better way of doing the below, maybe even user something other than Context Menu
 
         if (item.getItemId() == R.id.accept_friend){
             User user = (User) mRequestsListView.getAdapter().getItem(info.position);
@@ -152,22 +162,28 @@ public class FriendsFragment extends Fragment {
     }
 
     private void removeFriend(User user) {
-        //mFriendsDB
+        mFriendsDB.child(user.getId()).removeValue();
+        FirebaseDatabase.getInstance().getReference()
+                .child("Users").child(user.getId()).child("Friends").child(mAuth.getUid()).removeValue();
     }
 
     private void inviteToGame(User user) {
+        if (user != null && mHostName != null && mUsername != null){
+            DatabaseReference invitesDB = FirebaseDatabase.getInstance().getReference()
+                    .child("Users").child(user.getId()).child("Invitations");
+            invitesDB.child(mAuth.getUid()).child("host").setValue(mHostName);
+            invitesDB.child(mAuth.getUid()).child("invitee").setValue(mUsername);
+        }
     }
 
     private void acceptFriendRequest(User user, boolean isAccept) {
         Log.i(TAG, user + ". Accept Request: " + isAccept);
-
         if (isAccept){
             mFriendsDB.child(user.getId()).child("username").setValue(user.getUsername());
             FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(user.getId()).child("Friends")
                     .child(mAuth.getUid()).child("username").setValue(mUsername);
         }
-
         mRequestsDB.child(user.getId()).removeValue();
     }
 
@@ -194,7 +210,6 @@ public class FriendsFragment extends Fragment {
     }
 
     private void getRequestsList(){
-        mRequestIDMap = new HashMap<>();
         mRequestsDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Requests");
         mRequestsListener = mRequestsDB.addValueEventListener(new ValueEventListener() {
