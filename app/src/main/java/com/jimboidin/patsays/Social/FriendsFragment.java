@@ -77,8 +77,8 @@ public class FriendsFragment extends Fragment {
 
             getMyUsername();
             initializeListViews();
-            getFriendsList();
-            getRequestsList();
+            fillFriendsList();
+            fillRequestsList();
             attachContextMenus();
 
             FloatingActionButton fab = getView().findViewById(R.id.add_friend_fab);
@@ -120,8 +120,8 @@ public class FriendsFragment extends Fragment {
                                     @NonNull View v, @Nullable ContextMenu.ContextMenuInfo menuInfo) {
         super.onCreateContextMenu(menu, v, menuInfo);
         MenuInflater inflater = getActivity().getMenuInflater();
-
         AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) menuInfo;
+
         String name = ((TextView) info.targetView).getText().toString();
         menu.setHeaderTitle(name);
         menu.setHeaderIcon(R.drawable.ic_add_friend);
@@ -179,15 +179,15 @@ public class FriendsFragment extends Fragment {
     private void acceptFriendRequest(User user, boolean isAccept) {
         Log.i(TAG, user + ". Accept Request: " + isAccept);
         if (isAccept){
-            mFriendsDB.child(user.getId()).child("username").setValue(user.getUsername());
+            mFriendsDB.child(user.getId()).setValue(true);
             FirebaseDatabase.getInstance().getReference()
                     .child("Users").child(user.getId()).child("Friends")
-                    .child(mAuth.getUid()).child("username").setValue(mUsername);
+                    .child(mAuth.getUid()).setValue(true);
         }
         mRequestsDB.child(user.getId()).removeValue();
     }
 
-    private void getFriendsList(){
+    private void fillFriendsList(){
         mFriendsDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Friends");
         mFriendsListener = mFriendsDB.addValueEventListener(new ValueEventListener() {
@@ -197,21 +197,17 @@ public class FriendsFragment extends Fragment {
                 if (snapshot.exists())
                     for (DataSnapshot childData : snapshot.getChildren()){
                         getView().findViewById(R.id.friends_title).setVisibility(View.VISIBLE);
-                        String username = childData.child("username").getValue(String.class);
-                        User user = new User(username, childData.getKey());
-                        mFriendAdapter.add(user);
+                        getFriendUsername(childData.getKey());
                     }
-                if (mFriendAdapter.isEmpty())
-                    getView().findViewById(R.id.friends_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
 
-    private void getRequestsList(){
+    private void fillRequestsList(){
         mRequestsDB = FirebaseDatabase.getInstance().getReference()
-                .child("Users").child(mAuth.getUid()).child("Requests");
+                .child("Users").child(mAuth.getUid()).child("Friend_Requests");
         mRequestsListener = mRequestsDB.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -219,12 +215,44 @@ public class FriendsFragment extends Fragment {
                 if (snapshot.exists())
                     for (DataSnapshot childData: snapshot.getChildren()) {
                         getView().findViewById(R.id.requests_title).setVisibility(View.VISIBLE);
-                        String username = childData.child("username").getValue(String.class);
-                        User user = new User(username, childData.getKey());
-                        mRequestAdapter.add(user);
+                        getFriendReqUsername(childData.getKey());
                     }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void getFriendReqUsername(String id){
+        FirebaseDatabase.getInstance().getReference()
+                .child("Users").child(id).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    String username = snapshot.child("username").getValue(String.class);
+                    User user = new User(username, id);
+                    mRequestAdapter.add(user);
+                }
                 if (mRequestAdapter.isEmpty())
                     getView().findViewById(R.id.requests_title).setVisibility(View.GONE);
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void getFriendUsername(String id){
+        FirebaseDatabase.getInstance().getReference()
+                .child("Users").child(id).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    String username = snapshot.child("username").getValue(String.class);
+                    User user = new User(username, id);
+                    mFriendAdapter.add(user);
+                }
+                if (mFriendAdapter.isEmpty())
+                    getView().findViewById(R.id.friends_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -259,8 +287,8 @@ public class FriendsFragment extends Fragment {
                         Log.i(TAG, "add friend: user found");
                     }
                     if (invitedUserID != null && mAuth.getUid() != null) {
-                        usersDB.child(invitedUserID).child("Requests")
-                                .child(mAuth.getUid()).child("username").setValue(mUsername);
+                        usersDB.child(invitedUserID).child("Friend_Requests")
+                                .child(mAuth.getUid()).setValue(true);
                         Log.i(TAG, "add friend: request sent");
                     } else {
                         displayToast("Request not sent - try again");
@@ -299,19 +327,4 @@ public class FriendsFragment extends Fragment {
         super.onDestroy();
         removeListeners();
     }
-}
-
-class User {
-    private final String username, id;
-
-    public User(String username, String id){
-        this.username = username;
-        this.id = id;
-    }
-
-    public String getUsername() { return username; }
-    public String getId() { return id; }
-    @NonNull
-    @Override
-    public String toString() { return getUsername(); }
 }

@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
@@ -103,6 +104,8 @@ public class LobbyActivity extends AppCompatActivity {
     //updated mPlayersTextView if a player joins/leaves game
     //Closes game if the server no longer exists (host left)
     private void setupPlayerListener(){
+        DatabaseReference recentPlayersDB = FirebaseDatabase.getInstance().getReference()
+                .child("Users").child(mAuth.getUid()).child("Recent_Players");
         mPlayerListener = mCurrentGameDB.child("Players").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -113,6 +116,8 @@ public class LobbyActivity extends AppCompatActivity {
                 if (snapshot.exists())
                     for (DataSnapshot child : snapshot.getChildren()) { //get uIds/keys of all players
                         mPlayerList.add(child.getKey());
+                        if (!child.getKey().equals(mAuth.getUid()))
+                            recentPlayersDB.child(child.getKey()).setValue(true);
                         mPlayersTextView.append(child.getKey() + "\n"); //add to TextView
                     }
                 else {

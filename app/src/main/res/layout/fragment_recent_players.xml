@@ -5,9 +5,8 @@
     android:layout_height="match_parent"
     tools:context=".Social.RecentPlayersFragment">
 
-    <TextView
+    <ListView
+        android:id="@+id/recent_list_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="Hello recent frag" />
-
+        android:layout_height="wrap_content"/>
 </FrameLayout>
