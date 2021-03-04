@@ -46,9 +46,10 @@ public class FriendsFragment extends Fragment {
     private ValueEventListener mFriendsListener, mRequestsListener;
     private ListView mFriendsListView, mRequestsListView;
     private ArrayAdapter<User> mFriendAdapter, mRequestAdapter;
-    private String mUsername, mHostName;
+    private String mHostName;
     private LobbyListener mLobbyListener;
     private Boolean mInLobby;
+    private User myProfile;
 
 
     @Override
@@ -70,12 +71,11 @@ public class FriendsFragment extends Fragment {
         if (getView() != null){
             mAuth = FirebaseAuth.getInstance();
             mInLobby = mLobbyListener.askIsLobby();
-            if (mInLobby){
-                Log.i(TAG, "interface worked!");
-                mHostName = mLobbyListener.getHostName();
-            }
 
-            getMyUsername();
+            if (mInLobby)
+                mHostName = mLobbyListener.getHostName();
+
+            getMyProfile();
             initializeListViews();
             fillFriendsList();
             fillRequestsList();
@@ -86,13 +86,13 @@ public class FriendsFragment extends Fragment {
         }
     }
 
-    private void getMyUsername(){
+    private void getMyProfile(){
         FirebaseDatabase.getInstance().getReference().child("Users")
                 .child(mAuth.getUid()).child("username").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists())
-                    mUsername = snapshot.getValue(String.class);
+                    myProfile = new User(snapshot.getValue(String.class), mAuth.getUid());
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -144,48 +144,23 @@ public class FriendsFragment extends Fragment {
 
         if (item.getItemId() == R.id.accept_friend){
             User user = (User) mRequestsListView.getAdapter().getItem(info.position);
-            acceptFriendRequest(user, true);
+            User.handleRequest(myProfile, user, true);
         }
         else if (item.getItemId() == R.id.decline_friend){
             User user = (User) mRequestsListView.getAdapter().getItem(info.position);
-            acceptFriendRequest(user, false);
+            User.handleRequest(myProfile, user, false);
         }
         else if (item.getItemId() == R.id.invite_friend){
             User user = (User) mFriendsListView.getAdapter().getItem(info.position);
-            inviteToGame(user);
+            User.invite(myProfile, user, mHostName);
         }
         else if (item.getItemId() == R.id.remove_friend){
             User user = (User) mFriendsListView.getAdapter().getItem(info.position);
-            removeFriend(user);
+            User.removeFriend(myProfile, user);
         }
         return super.onContextItemSelected(item);
     }
 
-    private void removeFriend(User user) {
-        mFriendsDB.child(user.getId()).removeValue();
-        FirebaseDatabase.getInstance().getReference()
-                .child("Users").child(user.getId()).child("Friends").child(mAuth.getUid()).removeValue();
-    }
-
-    private void inviteToGame(User user) {
-        if (user != null && mHostName != null && mUsername != null){
-            DatabaseReference invitesDB = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(user.getId()).child("Invitations");
-            invitesDB.child(mAuth.getUid()).child("host").setValue(mHostName);
-            invitesDB.child(mAuth.getUid()).child("invitee").setValue(mUsername);
-        }
-    }
-
-    private void acceptFriendRequest(User user, boolean isAccept) {
-        Log.i(TAG, user + ". Accept Request: " + isAccept);
-        if (isAccept){
-            mFriendsDB.child(user.getId()).setValue(true);
-            FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(user.getId()).child("Friends")
-                    .child(mAuth.getUid()).setValue(true);
-        }
-        mRequestsDB.child(user.getId()).removeValue();
-    }
 
     private void fillFriendsList(){
         mFriendsDB = FirebaseDatabase.getInstance().getReference()
@@ -194,11 +169,13 @@ public class FriendsFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 mFriendAdapter.clear();
-                if (snapshot.exists())
-                    for (DataSnapshot childData : snapshot.getChildren()){
-                        getView().findViewById(R.id.friends_title).setVisibility(View.VISIBLE);
-                        getFriendUsername(childData.getKey());
-                    }
+                if (snapshot.exists()){
+                    getView().findViewById(R.id.friends_title).setVisibility(View.VISIBLE);
+                    for (DataSnapshot childData : snapshot.getChildren())
+                        appendFriendUser(childData.getKey());
+                }
+                else
+                    getView().findViewById(R.id.friends_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -212,18 +189,20 @@ public class FriendsFragment extends Fragment {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 mRequestAdapter.clear();
-                if (snapshot.exists())
-                    for (DataSnapshot childData: snapshot.getChildren()) {
-                        getView().findViewById(R.id.requests_title).setVisibility(View.VISIBLE);
-                        getFriendReqUsername(childData.getKey());
-                    }
+                if (snapshot.exists()){
+                    getView().findViewById(R.id.requests_title).setVisibility(View.VISIBLE);
+                    for (DataSnapshot childData: snapshot.getChildren())
+                        appendRequestUser(childData.getKey());
+                }
+                else
+                    getView().findViewById(R.id.requests_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
 
-    private void getFriendReqUsername(String id){
+    private void appendRequestUser(String id){
         FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(id).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -233,15 +212,13 @@ public class FriendsFragment extends Fragment {
                     User user = new User(username, id);
                     mRequestAdapter.add(user);
                 }
-                if (mRequestAdapter.isEmpty())
-                    getView().findViewById(R.id.requests_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
 
-    private void getFriendUsername(String id){
+    private void appendFriendUser(String id){
         FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(id).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -251,16 +228,11 @@ public class FriendsFragment extends Fragment {
                     User user = new User(username, id);
                     mFriendAdapter.add(user);
                 }
-                if (mFriendAdapter.isEmpty())
-                    getView().findViewById(R.id.friends_title).setVisibility(View.GONE);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
-
-
-
 
     private void openRequestDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
@@ -270,45 +242,30 @@ public class FriendsFragment extends Fragment {
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         builder.setView(input);
 
-        builder.setPositiveButton("OK", (dialog, which) -> sendFriendRequest(input.getText().toString()));
+        builder.setPositiveButton("OK", (dialog, which) -> findAndRequest(input.getText().toString()));
         builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
         builder.show();
     }
 
-    private void sendFriendRequest(String requestInput) {
-        if (!requestInput.equals(mUsername)) {
+    private void findAndRequest(String requestInput) {
+        if (!requestInput.equals(myProfile.getUsername())) {
             DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
             usersDB.orderByChild("username").equalTo(requestInput).addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override
                 public void onDataChange(@NonNull DataSnapshot snapshot) {
-                    String invitedUserID = null;
                     for (DataSnapshot childData : snapshot.getChildren()) {
-                        invitedUserID = childData.getKey();
-                        Log.i(TAG, "add friend: user found");
+                        User user = new User(requestInput, childData.getKey());
+                        User.requestFriend(myProfile, user);
                     }
-                    if (invitedUserID != null && mAuth.getUid() != null) {
-                        usersDB.child(invitedUserID).child("Friend_Requests")
-                                .child(mAuth.getUid()).setValue(true);
-                        Log.i(TAG, "add friend: request sent");
-                    } else {
-                        displayToast("Request not sent - try again");
-                        Log.i(TAG, "add friend: request not sent");
-                    }
-
                 }
-
                 @Override
-                public void onCancelled(@NonNull DatabaseError error) {
-                }
+                public void onCancelled(@NonNull DatabaseError error) {}
             });
         }
         else {
             displayToast("You cannot add yourself as a friend");
-            Log.i(TAG, "Sent friend request to self, discarded");
         }
     }
-
-
 
     private void removeListeners(){
         if (mFriendsListener != null)

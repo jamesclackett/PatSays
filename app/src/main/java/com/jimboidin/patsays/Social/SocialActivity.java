@@ -2,7 +2,10 @@ package com.jimboidin.patsays.Social;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
 import androidx.viewpager2.widget.ViewPager2;
 
 import android.os.Bundle;
@@ -68,6 +71,33 @@ public class SocialActivity extends AppCompatActivity implements LeaveSocialList
     @Override
     public String getHostName() {
         return mHostName;
+    }
+
+}
+
+class SocialPagerAdapter  extends FragmentStateAdapter {
+
+    public SocialPagerAdapter(@NonNull FragmentManager fm, @NonNull Lifecycle lifecycle) {
+        super(fm, lifecycle);
+    }
+
+    @NonNull
+    @Override
+    public Fragment createFragment(int position) {
+        switch (position){
+            case 0:
+                return new FriendsFragment();
+            case 1:
+                return new InvitationsFragment();
+            case 2:
+                return new RecentPlayersFragment();
+        }
+        throw new IllegalArgumentException("no item");
+    }
+
+    @Override
+    public int getItemCount() {
+        return 3;
     }
 
 

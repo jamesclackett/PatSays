@@ -32,17 +32,16 @@ import com.jimboidin.patsays.R;
 
 
 public class InvitationsFragment extends Fragment {
-    private Context mContext;
     private final String TAG = "InvitationsFragment";
-    private String mUsername, mHostName;
+    private Context mContext;
+    private String mHostName;
+    private User myProfile;
     private FirebaseAuth mAuth;
     private DatabaseReference mInvitesDB;
     private ValueEventListener mInviteListener;
-    private ListView mInvitesListView;
     private ArrayAdapter<Invite> mArrayAdapter;
     private LeaveSocialListener mLeaveListener;
     private LobbyListener mLobbyListener;
-    private Boolean mInLobby;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -55,47 +54,46 @@ public class InvitationsFragment extends Fragment {
         mContext = context;
         mLeaveListener = (LeaveSocialListener) context;
         mLobbyListener = (LobbyListener) context;
-
     }
 
     @Override
     public void onStart() {
         super.onStart();
-        mAuth = FirebaseAuth.getInstance();
-        mInLobby = mLobbyListener.askIsLobby();
-        if (mInLobby){
-            Log.i(TAG, "interface worked!");
-            mHostName = mLobbyListener.getHostName();
+        if (getView() != null){
+            mAuth = FirebaseAuth.getInstance();
+            Boolean mInLobby = mLobbyListener.askIsLobby();
+            FloatingActionButton fab = getView().findViewById(R.id.invite_by_name_button);
+
+            if (mInLobby)
+                mHostName = mLobbyListener.getHostName();
+            else
+                fab.setVisibility(View.GONE);
+
+            fab.setOnClickListener(v -> openInviteDialog());
+            getMyProfile();
+            initializeListView();
+            getInvitations();
         }
 
-        FloatingActionButton fab = getView().findViewById(R.id.invite_by_name_button);
-        if (!mInLobby)
-            fab.setVisibility(View.GONE);
-        fab.setOnClickListener(v -> openInviteDialog());
-        initializeInviteListView();
-
-        getMyUsername();
-        getInvitations();
     }
 
-    private void getMyUsername(){
+    private void getMyProfile(){
         FirebaseDatabase.getInstance().getReference().child("Users")
                 .child(mAuth.getUid()).child("username").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists())
-                    mUsername = snapshot.getValue(String.class);
+                    myProfile = new User(snapshot.getValue(String.class), mAuth.getUid());
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
     }
 
-    private void initializeInviteListView() {
-        mInvitesListView = getView().findViewById(R.id.invites_listView);
+    private void initializeListView() {
+        ListView mInvitesListView = getView().findViewById(R.id.invites_listView);
         mArrayAdapter = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1);
         mInvitesListView.setAdapter(mArrayAdapter);
-
         mInvitesListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -107,34 +105,58 @@ public class InvitationsFragment extends Fragment {
         });
     }
 
+    private void openInviteDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+        builder.setTitle("Invite");
+
+        final EditText input = new EditText(mContext);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("OK", (dialog, which) -> findAndInvite(input.getText().toString()));
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
+    }
+
+    private void findAndInvite(String inviteInput){
+        if (!inviteInput.equals(myProfile.getUsername())){
+            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
+            usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
+                        User user = new User(inviteInput, childDataSnapshot.getKey());
+                        User.invite(myProfile, user, mHostName);
+                    }
+                }
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) { }
+            });
+        }
+        else {
+            displayToast("You cannot invite yourself to a game");
+        }
+
+    }
+
     private void getInvitations() {
         mInvitesDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Invitations");
         mInviteListener = mInvitesDB.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                System.out.println("Invites: onDataChange invite triggered!!");
                 mArrayAdapter.clear();
                 if (snapshot.exists())
-                    for (DataSnapshot childData : snapshot.getChildren())
-                        if (childData.child("host").exists() && childData.child("invitee").exists()){
-
-                            String hostNameStr = childData.child("host").getValue(String.class);
-                            String inviteeStr = childData.child("invitee").getValue(String.class);
-
-                            addInvitation(inviteeStr, hostNameStr);
-                        }
+                    for (DataSnapshot childData : snapshot.getChildren()){
+                        String hostNameStr = childData.getKey();
+                        String inviteeStr = childData.child("invitee").getValue(String.class);
+                        Invite invite = new Invite(inviteeStr, hostNameStr);
+                        mArrayAdapter.add(invite);
+                    }
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });
-    }
-
-
-    private void addInvitation(String inviteeName, String hostName) {
-        Invite invite = new Invite(inviteeName, hostName);
-        mArrayAdapter.add(invite);
-        Log.i(TAG, "Invite added to ListView");
     }
 
     private void checkLobbyExists(String hostName) {
@@ -144,11 +166,9 @@ public class InvitationsFragment extends Fragment {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.hasChild(hostName)) {
                     startLobbyActivity(hostName);
-                    Log.i(TAG, "Lobby exists: true");
                 }
                 else{
                     displayToast("Lobby no longer exists");
-                    Log.i(TAG, "Lobby exists: false");
                 }
             }
             @Override
@@ -160,9 +180,14 @@ public class InvitationsFragment extends Fragment {
         removeListeners();
         Intent intent = new Intent(mContext, LobbyActivity.class);
         intent.putExtra("host_name", hostName);
-        Log.i(TAG, "startLobby called");
         startActivity(intent);
         mLeaveListener.onLeave();
+    }
+
+
+    private void removeListeners() {
+        if (mInviteListener != null)
+            mInvitesDB.removeEventListener(mInviteListener);
     }
 
     private void displayToast(String message) {
@@ -175,58 +200,19 @@ public class InvitationsFragment extends Fragment {
         super.onDestroy();
         removeListeners();
     }
+}
 
-    private void removeListeners() {
-        if (mInviteListener != null)
-            mInvitesDB.removeEventListener(mInviteListener);
+class Invite{
+    private final String inviteeName, hostName;
+
+    public Invite(String inviteeName, String hostName){
+        this.inviteeName = inviteeName;
+        this.hostName = hostName;
     }
 
-    private void openInviteDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        builder.setTitle("Invite");
+    public String getHostName() { return hostName; }
 
-        final EditText input = new EditText(mContext);
-        input.setInputType(InputType.TYPE_CLASS_TEXT);
-        builder.setView(input);
-
-        builder.setPositiveButton("OK", (dialog, which) -> invitePlayer(input.getText().toString()));
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
-        builder.show();
-    }
-
-    private void invitePlayer(String inviteInput){
-        if (!inviteInput.equals(mUsername)){
-            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-            usersDB.orderByChild("username").equalTo(inviteInput).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override
-                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                    String invitedUserID = null;
-                    for (DataSnapshot childDataSnapshot : dataSnapshot.getChildren()) {
-                        invitedUserID = childDataSnapshot.getKey();
-                        Log.d(TAG, "invite player: user found");
-                    }
-
-                    if (invitedUserID != null && mUsername != null){
-                        usersDB.child(invitedUserID).child("Invitations")
-                                .child(mAuth.getUid()).child("host").setValue(mHostName);
-                        usersDB.child(invitedUserID).child("Invitations")
-                                .child(mAuth.getUid()).child("invitee").setValue(mUsername);
-                        Log.d(TAG, "invite player: DB invite created");
-                    } else{
-                        displayToast("Invitation not sent - try again");
-                        Log.w(TAG, "invite player: unsuccessful. invited=" + invitedUserID
-                                + ", username=" + mUsername);
-                    }
-
-                }
-                @Override
-                public void onCancelled(@NonNull DatabaseError error) { }
-            });
-        }
-        else {
-            Log.i(TAG, "Invited self to game - discard" );
-            displayToast("You cannot invite yourself to a game");
-        }
-
-    }
+    @NonNull
+    @Override
+    public String toString() { return  inviteeName + " invited you to join: " + hostName; }
 }

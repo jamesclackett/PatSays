@@ -2,6 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/add_recent"
-        android:title="Add Friend"/>
+        android:title="@string/add_friend"/>
 
 </menu>

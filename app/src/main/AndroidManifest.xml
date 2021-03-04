@@ -9,7 +9,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.PatSays">
-        <activity android:name=".Social.SocialActivity"></activity>
+        <activity android:name=".Social.SocialActivity" />
         <activity android:name=".LobbyActivity" />
         <activity android:name=".GameActivity" />
         <activity android:name=".MainActivity" />

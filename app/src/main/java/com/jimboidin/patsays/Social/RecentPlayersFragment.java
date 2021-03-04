@@ -31,16 +31,17 @@ import javax.crypto.Cipher;
 
 
 public class RecentPlayersFragment extends Fragment {
+    private final String TAG = "RecentPlayersFragment";
     private LobbyListener mLobbyListener;
     private Context mContext;
-    private final String TAG = "RecentPlayersFragment";
     private FirebaseAuth mAuth;
     private Boolean mInLobby;
-    private String mHostName, mUsername;
+    private String mHostName;
     private ListView mRecentListView;
     private ArrayAdapter<User> mRecentAdapter;
     private DatabaseReference mRecentDB;
     private ValueEventListener mRecentListener;
+    private User myProfile;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -60,11 +61,11 @@ public class RecentPlayersFragment extends Fragment {
         if (getView() != null){
             mAuth = FirebaseAuth.getInstance();
             mInLobby = mLobbyListener.askIsLobby();
-            if (mInLobby){
-                Log.i(TAG, "interface worked!");
+
+            if (mInLobby)
                 mHostName = mLobbyListener.getHostName();
-            }
-            getMyUsername();
+
+            getMyProfile();
             initializeListView();
             fillRecentList();
             attachContextMenu();
@@ -72,13 +73,13 @@ public class RecentPlayersFragment extends Fragment {
     }
 
 
-    private void getMyUsername(){
+    private void getMyProfile(){
         FirebaseDatabase.getInstance().getReference().child("Users")
                 .child(mAuth.getUid()).child("username").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists())
-                    mUsername = snapshot.getValue(String.class);
+                    myProfile = new User(snapshot.getValue(String.class), mAuth.getUid());
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -98,7 +99,6 @@ public class RecentPlayersFragment extends Fragment {
     }
 
     private void fillRecentList() {
-        //TODO - Complete this method (fill from DB to create User Objects)
         mRecentDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Recent_Players");
         mRecentListener = mRecentDB.addValueEventListener(new ValueEventListener() {
@@ -108,7 +108,7 @@ public class RecentPlayersFragment extends Fragment {
                 if (snapshot.exists())
                     for (DataSnapshot childData : snapshot.getChildren()){
                         String id = childData.getKey();
-                        getPlayerUsername(id);
+                        appendUserProfile(id);
                     }
             }
             @Override
@@ -116,7 +116,7 @@ public class RecentPlayersFragment extends Fragment {
         });
     }
 
-    private void getPlayerUsername(String id){
+    private void appendUserProfile(String id){
         FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(id).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -155,29 +155,15 @@ public class RecentPlayersFragment extends Fragment {
 
         if (item.getItemId() == R.id.add_recent){
             User user = (User) mRecentListView.getAdapter().getItem(info.position);
-            sendFriendRequest(user);
+            User.requestFriend(myProfile, user);
         }
         if (item.getItemId() == R.id.invite_recent){
             User user = (User) mRecentListView.getAdapter().getItem(info.position);
-            inviteToGame(user);
+            User.invite(myProfile, user, mHostName);
         }
         return super.onContextItemSelected(item);
     }
 
-    private void inviteToGame(User user) {
-        if (user != null && mHostName != null && mUsername != null){
-            DatabaseReference invitesDB = FirebaseDatabase.getInstance().getReference()
-                    .child("Users").child(user.getId()).child("Invitations");
-            invitesDB.child(mAuth.getUid()).child("host").setValue(mHostName);
-            invitesDB.child(mAuth.getUid()).child("invitee").setValue(mUsername);
-        }
-    }
-
-    private void sendFriendRequest(User user) {
-        String id = user.getId();
-        DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users");
-        usersDB.child(id).child("Friend_Requests").child(mAuth.getUid()).setValue(true);
-    }
 
     @Override
     public void onDestroy() {

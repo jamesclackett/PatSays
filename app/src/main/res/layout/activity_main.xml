@@ -26,7 +26,7 @@
         android:id="@+id/social_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/social"/>
+        android:text="@string/social" />
 
     <Button
         android:id="@+id/logout_button"

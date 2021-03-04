@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".Social.FriendsFragment">
 
     <TextView
         android:id="@+id/requests_title"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Friend Requests:"
-        android:visibility="gone"/>
+        android:text="@string/friend_requests"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ListView
         android:id="@+id/requests_list_view"
@@ -24,23 +24,24 @@
         android:id="@+id/friends_title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Friends"
-        app:layout_constraintTop_toBottomOf="@id/requests_list_view"
-        android:visibility="gone"/>
+        android:text="@string/friends"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/requests_list_view" />
 
     <ListView
         android:id="@+id/friends_list_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/friends_title"/>
+        app:layout_constraintTop_toBottomOf="@id/friends_title" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_friend_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="20dp"
+        android:contentDescription="@string/open_user_search"
         android:src="@drawable/ic_add_friend"
-        android:layout_margin="20dp"/>
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

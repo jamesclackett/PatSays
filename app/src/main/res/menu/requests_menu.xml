@@ -2,10 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/accept_friend"
-        android:title="Accept"
+        android:title="@string/accept"
         />
     <item
         android:id="@+id/decline_friend"
-        android:title="Decline"/>
+        android:title="@string/decline"/>
 
 </menu>
