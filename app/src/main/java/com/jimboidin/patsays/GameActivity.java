@@ -30,7 +30,7 @@ import java.lang.*;
 import java.util.HashMap;
 
 public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
-    private final String TAG = "GameActivity - debug";
+    private final String TAG = "GameActivity";
     private RecyclerView mHandRecyclerView;
     private RecyclerView.Adapter mHandListAdapter;
     private ArrayList<Card> mHandList, mSelectedList;
@@ -47,7 +47,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
-        Log.d(TAG, "onCreate called");
 
         mAuth = FirebaseAuth.getInstance();
         mIsHost = getIntent().getBooleanExtra("is_host", false);
@@ -57,6 +56,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mSelectedList = new ArrayList<>();
         mHandList = new ArrayList<>();
 
+        verifyPlayerList();
         setupMyFragment();
         setupOpponentFragments();
         setupPlayerLeftListener();
@@ -75,6 +75,21 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             setupDealtListener();
         }
 
+    }
+
+    private void verifyPlayerList() {
+        mCurrentGameDB.child("Players").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (mPlayerList.size() != snapshot.getChildrenCount()){
+                    closeGameServer(); //may have issue with listeners persisting if they are created after this
+                    displayToast("Player left: exiting..");
+                    Log.i(TAG, "verify player list failed");
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
     }
 
 
@@ -118,7 +133,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     }
 
     private void getDealtCards(){
-        System.out.println("here 1");
         DatabaseReference myHandDb = mCurrentGameDB.child("Players").child(mAuth.getUid())
                 .child("Cards").child("In_Hand");
         myHandDb.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -129,7 +143,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                         Card card = child.getValue(Card.class);
                         mHandList.add(card);
                     }
-                    myHandDb.removeValue();
                     setupFinalCards();
                 }
             }
@@ -145,6 +158,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             finalList.add(mHandList.remove(i));
 
         mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(finalList);
+        mCurrentGameDB.child("Players").child(mAuth.getUid())
+                .child("Cards").child("In_Hand").removeValue();
         createInHandRecyclerView();
     }
 
@@ -183,7 +198,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                 new LinearLayoutManager(GameActivity.this, LinearLayoutManager.HORIZONTAL,
                         false);
         mHandRecyclerView.setLayoutManager(horizontalLayoutManager);
-        System.out.println("handlist type is : " + mHandList.getClass());
         mHandListAdapter = new HandListAdapter(this, mHandList);
         mHandRecyclerView.setAdapter(mHandListAdapter);
     }
@@ -215,12 +229,13 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
 
     private void closeGameServer(){
-        System.out.println("gameserver close called");
+        Log.i(TAG, "gameserver close called");
         if (mDealtListener != null){
             mCurrentGameDB.child("Players").child(mAuth.getUid())
                     .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
         }
-        mCurrentGameDB.child("Players").removeEventListener(mPlayerLeftListener);
+        if (mPlayerLeftListener != null)
+            mCurrentGameDB.child("Players").removeEventListener(mPlayerLeftListener);
         if (mIsHost)
             mCurrentGameDB.removeValue(); //destroy gameServer
         else
@@ -237,6 +252,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             @Override
             public void onChildRemoved(@NonNull DataSnapshot snapshot) {
                 displayToast("Player Left - Ending Game..");
+                Log.i(TAG, "playerLeftListener triggered by " + snapshot.getKey());
                 closeGameServer();
             }
             @Override
