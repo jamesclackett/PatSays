@@ -53,14 +53,10 @@ public class MainActivity extends AppCompatActivity {
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
             public void onComplete(@NonNull Task<String> task) {
-                sendTokenToDB(task.getResult());
+                FirebaseDatabase.getInstance().getReference().child("Users")
+                        .child(mAuth.getUid()).child("notificationToken").setValue(task.getResult());
             }
         });
-    }
-
-    private void sendTokenToDB(String result) {
-        FirebaseDatabase.getInstance().getReference().child("Users")
-                .child(mAuth.getUid()).child("notificationToken").setValue(result);
     }
 
     private void startSocialActivity(){
@@ -76,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void logOut() {
+        FirebaseMessaging.getInstance().deleteToken();
         mAuth.signOut();
         Log.d(TAG, "user signed out");
         Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
