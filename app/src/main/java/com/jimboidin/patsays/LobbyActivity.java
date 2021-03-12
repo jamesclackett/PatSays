@@ -79,7 +79,7 @@ public class LobbyActivity extends AppCompatActivity {
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.setValue(true); //overwrite any game servers host previously created
         mCurrentGameDB.child("Players").child(mHostName).setValue(true);
-        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(Calendar.getInstance().getTimeInMillis());
+        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(1);
         Log.i(TAG, "Game Server Created");
         setupPlayerListener();
     }
@@ -87,7 +87,7 @@ public class LobbyActivity extends AppCompatActivity {
     private void joinGameServer() {
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.child("Players").child(mAuth.getUid()).setValue(true);
-        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(Calendar.getInstance().getTimeInMillis());
+        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(1);
         Log.i(TAG, "Got reference to host server");
         setupPlayerListener();
         setupStartListener();

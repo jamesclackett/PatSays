@@ -268,7 +268,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                         if (snapshot.exists())
                             for (DataSnapshot child : snapshot.getChildren()){
                                 long lastTime = child.getValue(Long.class);
-                                if (time - lastTime > 8000 || snapshot.getChildrenCount() != mPlayerList.size()){
+                                if (lastTime != 1 && (time - lastTime > 8000 || snapshot.getChildrenCount() != mPlayerList.size())){
                                     displayToast("Player Left - Ending Game..");
                                     Log.i(TAG, "Player disconnected");
                                     closeGameServer();
