@@ -23,6 +23,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.Social.SocialActivity;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 
 public class LobbyActivity extends AppCompatActivity {
     private final String TAG = "LobbyActivity";
@@ -78,6 +79,7 @@ public class LobbyActivity extends AppCompatActivity {
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.setValue(true); //overwrite any game servers host previously created
         mCurrentGameDB.child("Players").child(mHostName).setValue(true);
+        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(Calendar.getInstance().getTimeInMillis());
         Log.i(TAG, "Game Server Created");
         setupPlayerListener();
     }
@@ -85,6 +87,7 @@ public class LobbyActivity extends AppCompatActivity {
     private void joinGameServer() {
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.child("Players").child(mAuth.getUid()).setValue(true);
+        mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(Calendar.getInstance().getTimeInMillis());
         Log.i(TAG, "Got reference to host server");
         setupPlayerListener();
         setupStartListener();
@@ -190,8 +193,8 @@ public class LobbyActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         closeGame();
+        super.onBackPressed();
     }
 
     private void displayToast(String message) {

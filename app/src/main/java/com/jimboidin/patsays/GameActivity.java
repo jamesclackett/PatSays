@@ -8,6 +8,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.ContactsContract;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -27,6 +30,7 @@ import com.jimboidin.patsays.Game.TableCardsFragment;
 
 import java.util.ArrayList;
 import java.lang.*;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class GameActivity extends AppCompatActivity implements HandListAdapter.Listener {
@@ -56,10 +60,10 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mSelectedList = new ArrayList<>();
         mHandList = new ArrayList<>();
 
-        verifyPlayerList();
         setupMyFragment();
         setupOpponentFragments();
-        setupPlayerLeftListener();
+        //setupPlayerLeftListener();
+        startTimeoutHandler();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
         chooseButton.setOnClickListener(v -> placeChosenCards());
@@ -74,22 +78,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         else{
             setupDealtListener();
         }
-
-    }
-
-    private void verifyPlayerList() {
-        mCurrentGameDB.child("Players").addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (mPlayerList.size() != snapshot.getChildrenCount()){
-                    closeGameServer(); //may have issue with listeners persisting if they are created after this
-                    displayToast("Player left: exiting..");
-                    Log.i(TAG, "verify player list failed");
-                }
-            }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
     }
 
 
@@ -190,7 +178,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     }
 
 
-
     private void createInHandRecyclerView() {
         mHandRecyclerView = findViewById(R.id.hand_recycler_view);
         mHandRecyclerView.setNestedScrollingEnabled(false);
@@ -236,30 +223,10 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         }
         if (mPlayerLeftListener != null)
             mCurrentGameDB.child("Players").removeEventListener(mPlayerLeftListener);
-        if (mIsHost)
-            mCurrentGameDB.removeValue(); //destroy gameServer
-        else
-            mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
-        finish();
-    }
 
-    private void setupPlayerLeftListener(){
-        mPlayerLeftListener = mCurrentGameDB.child("Players").addChildEventListener(new ChildEventListener() {
-            @Override
-            public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot snapshot) {
-                displayToast("Player Left - Ending Game..");
-                Log.i(TAG, "playerLeftListener triggered by " + snapshot.getKey());
-                closeGameServer();
-            }
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) { }
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) { }
-        });
+        mCurrentGameDB.removeValue(); //destroy gameServer
+        endTimeoutHandler();
+        finish();
     }
 
     @Override
@@ -271,6 +238,61 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private void displayToast(String message) {
         Toast.makeText(GameActivity.this, message,
                 Toast.LENGTH_SHORT).show();
+    }
+
+
+    private Handler handler;
+    private Runnable runnable, monitor;
+    private void startTimeoutHandler(){
+        handler = new Handler();
+
+        runnable = new Runnable() {
+            @Override
+            public void run() {
+                long time = Calendar.getInstance().getTimeInMillis();
+                mCurrentGameDB.child("Game_Info").child("Players_Active").child(mAuth.getUid()).setValue(time);
+                handler.postDelayed(this, 5000);
+            }
+        };
+        runnable.run();
+
+        //all clients monitor others for potential disconnection. Cannot rely on single client to monitor
+        //as they may disconnect themselves.
+        monitor = new Runnable() {
+            @Override
+            public void run() {
+                long time = Calendar.getInstance().getTimeInMillis();
+                mCurrentGameDB.child("Game_Info").child("Players_Active").addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists())
+                            for (DataSnapshot child : snapshot.getChildren()){
+                                long lastTime = child.getValue(Long.class);
+                                if (time - lastTime > 8000 || snapshot.getChildrenCount() != mPlayerList.size()){
+                                    displayToast("Player Left - Ending Game..");
+                                    Log.i(TAG, "Player disconnected");
+                                    closeGameServer();
+                                }
+                            }
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) { }
+                });
+
+                handler.postDelayed(this, 5000);
+            }
+        };
+        monitor.run();
+    }
+
+    private void endTimeoutHandler(){
+        if (handler != null){
+            if (runnable != null)
+                handler.removeCallbacks(runnable);
+            if (monitor != null)
+                handler.removeCallbacks(monitor);
+        }
     }
 
 
