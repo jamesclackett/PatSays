@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.media.Image;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.ContactsContract;
@@ -14,6 +15,7 @@ import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -27,6 +29,7 @@ import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.Game.Deck;
 import com.jimboidin.patsays.Game.HandListAdapter;
 import com.jimboidin.patsays.Game.TableCardsFragment;
+import com.jimboidin.patsays.Utils.TheBrain;
 
 import java.util.ArrayList;
 import java.lang.*;
@@ -37,14 +40,14 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private final String TAG = "GameActivity";
     private RecyclerView mHandRecyclerView;
     private RecyclerView.Adapter mHandListAdapter;
-    private ArrayList<Card> mHandList, mSelectedList;
+    private ArrayList<Card> mHandList, mSelectedList,mPlayPile;
+    private ImageView mPlayPileImage;
     private Boolean mIsHost;
     private ArrayList<String> mPlayerList;
     private String mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
-    private ValueEventListener mDealtListener;
-    private ChildEventListener mPlayerLeftListener;
+    private ValueEventListener mDealtListener, mTurnListener, mPlayPileListener;
 
 
     @Override
@@ -59,16 +62,20 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mSelectedList = new ArrayList<>();
         mHandList = new ArrayList<>();
+        mPlayPile = new ArrayList<>();
+        mPlayPileImage = findViewById(R.id.playpile_image_view);
 
         setupMyFragment();
         setupOpponentFragments();
-        //setupPlayerLeftListener();
+        initializeTurnListener();
+        initializePlayPileListener();
         startTimeoutHandler();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
         chooseButton.setOnClickListener(v -> placeChosenCards());
 
         if (mIsHost) {
+            initializeReadyListener();
             try {
                 dealCards(mPlayerList.size());
             } catch (Exception e) {
@@ -95,7 +102,12 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
         mHandList = dealtMap.get(mAuth.getUid());
         sendDealtCards(dealtMap);
+        sendLeftoverCards(deck.getLeftoverCards());
         setupFinalCards();
+    }
+
+    private void sendLeftoverCards(ArrayList<Card> leftoverCards) {
+        mCurrentGameDB.child("Game_Info").child("Leftover_Cards").setValue(leftoverCards);
     }
 
     private void sendDealtCards(HashMap<String, ArrayList<Card>> dealtMap) {
@@ -189,9 +201,15 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mHandRecyclerView.setAdapter(mHandListAdapter);
     }
 
+
+    //interface with HandListAdapter:
     @Override
     public void itemSelected(ArrayList<Card> selectedList) { //gets selectedList sent from HandListAdapter interface
         mSelectedList = selectedList;
+        for (Card card : mSelectedList){
+            System.out.println(card.getSuit() + " " + card.getValue());
+        }
+        System.out.println("==========");
     }
 
     private void placeChosenCards() {
@@ -201,32 +219,34 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             Button chooseButton = findViewById(R.id.choose_cards_button);
             chooseButton.setVisibility(View.GONE);
             mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Chosen").setValue(mSelectedList);
+            mCurrentGameDB.child("Game_Info").child("Ready").child(mAuth.getUid()).setValue(true);
         }
         else {
             Log.w(TAG, "incorrect number of cards chosen. Must choose 3");
-            showToast("Choose 3 cards only");
+            displayToast("Choose 3 cards only");
         }
     }
 
 
-    private void showToast(String message) {
-        Toast toast = Toast.makeText(this, message, Toast.LENGTH_LONG);
-        toast.show();
-    }
 
 
     private void closeGameServer(){
         Log.i(TAG, "gameserver close called");
-        if (mDealtListener != null){
-            mCurrentGameDB.child("Players").child(mAuth.getUid())
-                    .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
-        }
-        if (mPlayerLeftListener != null)
-            mCurrentGameDB.child("Players").removeEventListener(mPlayerLeftListener);
-
+        removeListeners();
         mCurrentGameDB.removeValue(); //destroy gameServer
         endTimeoutHandler();
         finish();
+    }
+
+    private void removeListeners(){
+        if (mDealtListener != null) {
+            mCurrentGameDB.child("Players").child(mAuth.getUid())
+                    .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
+        }
+        if (mTurnListener != null)
+            mCurrentGameDB.child("Game_Info").child("turn").removeEventListener(mTurnListener);
+        if (mPlayPileListener != null)
+            mCurrentGameDB.child("currentCard").removeEventListener(mPlayPileListener);
     }
 
     @Override
@@ -268,7 +288,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                         if (snapshot.exists())
                             for (DataSnapshot child : snapshot.getChildren()){
                                 long lastTime = child.getValue(Long.class);
-                                if (lastTime != 1 && (time - lastTime > 8000 || snapshot.getChildrenCount() != mPlayerList.size())){
+                                if (lastTime != 1 && (time - lastTime > 20000 || snapshot.getChildrenCount() != mPlayerList.size())){
                                     displayToast("Player Left - Ending Game..");
                                     Log.i(TAG, "Player disconnected");
                                     closeGameServer();
@@ -295,6 +315,132 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         }
     }
 
+    private void initializeReadyListener(){
+        mCurrentGameDB.child("Game_Info").child("Ready").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    if (snapshot.getChildrenCount() == mPlayerList.size()){
+                        mCurrentGameDB.child("Game_Info").child("turn").setValue(mAuth.getUid());
+                        mCurrentGameDB.child("Game_Info").child("Ready").removeEventListener(this); //TODO: may not work, test later
+                    }
+                }
+
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
+    private void initializeTurnListener(){
+        mTurnListener = mCurrentGameDB.child("Game_Info").child("turn").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists())
+                    if (snapshot.getValue(String.class).equals(mAuth.getUid()))
+                        startChooser();
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+
+    private void initializePlayPileListener(){
+        mPlayPileListener = mCurrentGameDB.child("Game_Info").child("currentCard").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    if (snapshot.getValue() != null) {
+                        Card card = snapshot.getValue(Card.class);
+                        mPlayPile.add(0, card);
+                        mPlayPileImage.setImageDrawable(getResources().getDrawable(card.getIconID()));
+                    }
+                }
+                else {
+                        mPlayPile.clear();
+                        mPlayPileImage.setImageDrawable(null);
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    private void startChooser(){
+        TheBrain brain = new TheBrain(mHandList, mPlayPile, mPlayerList);
+        ArrayList<Card> playable = brain.getPlayable();
+        String nextTurn = brain.getNextTurn(mAuth.getUid());
+        Button placeButton = findViewById(R.id.place_button);
+
+        if (playable.size() == 0){
+            handleNonPlay(nextTurn);
+        }
+
+        else {
+            placeButton.setVisibility(View.VISIBLE);
+            placeButton.setOnClickListener(v -> handlePlay());
+        }
+    }
+
+    private void handleNonPlay(String nextTurn){
+        displayToast("no playable cards. picking up..");
+        mHandList.addAll(mPlayPile);
+        mPlayPile.clear();
+        mCurrentGameDB.child("Game_Info").child("currentCard").removeValue();
+        mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
+    }
+
+    private void handlePlay(){
+        TheBrain brain = new TheBrain(mHandList, mPlayPile, mPlayerList);
+        ArrayList<Card> playable = brain.getPlayable();
+
+        String value = mSelectedList.get(0).getValue();
+        for (Card card : mSelectedList) {
+            if (!playable.contains(card) || !card.getValue().equals(value)) {
+                displayToast("Selected unplayable card");
+                return;
+            }
+        }
+
+        if (brain.isActionable(value)){
+            switch (value){
+                case "10":
+                    play10();
+                    break;
+                case "joker":
+                    playJoker();
+                    break;
+                case "8":
+                    play8();
+                    break;
+            }
+        }
+        else {
+            for (Card card : mSelectedList){
+                mHandList.remove(card);
+                mCurrentGameDB.child("Game_Info").child("currentCard").setValue(card);
+            }
+            mHandListAdapter.notifyDataSetChanged();
+            Button placeButton = findViewById(R.id.place_button);
+            placeButton.setVisibility(View.GONE);
+            mCurrentGameDB.child("Game_Info").child("turn").setValue(brain.getNextTurn(mAuth.getUid()));
+        }
+
+    }
+
+    private void play10() {
+        System.out.println("10 played");
+    }
+
+    private void playJoker() {
+        System.out.println("joker played");
+    }
+
+    private void play8() {
+        System.out.println("8 played");
+    }
 
 
 }

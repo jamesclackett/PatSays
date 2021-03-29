@@ -2,9 +2,11 @@ package com.jimboidin.patsays;
 
 import com.jimboidin.patsays.Game.Card;
 import com.jimboidin.patsays.Game.Deck;
+import com.jimboidin.patsays.Utils.TheBrain;
 
 import org.junit.Test;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -31,7 +33,6 @@ public class ExampleUnitTest {
         Deck deck = new Deck();
         assertEquals(2, getNumJokers(deck));
     }
-
 
     @Test
     public void jokersRemovedCorrectly(){
@@ -74,4 +75,32 @@ public class ExampleUnitTest {
         }
         return counter;
     }
+
+    @Test
+    public void testBrain(){
+        ArrayList<Card> handList = new ArrayList<>();
+        handList.add(new Card("hearts", "2", R.drawable.hearts2));
+        handList.add(new Card("hearts", "7", R.drawable.hearts7));
+        handList.add(new Card("hearts", "4", R.drawable.hearts4));
+        handList.add(new Card("hearts", "Ace", R.drawable.hearts11));
+        handList.add(new Card("hearts", "3", R.drawable.hearts3));
+        handList.add(new Card("hearts", "5", R.drawable.hearts5));
+
+        ArrayList<Card> playPile = new ArrayList<>();
+        playPile.add(new Card("diamonds", "3", R.drawable.diamonds3));
+        playPile.add(new Card("diamonds", "7", R.drawable.diamonds9));
+        playPile.add(new Card("diamonds", "9", R.drawable.diamonds7));
+        playPile.add(new Card("diamonds", "4", R.drawable.diamonds4));
+
+        ArrayList<String> turnList = new ArrayList<>();
+        turnList.add("player 1");
+        turnList.add("player 2");
+        turnList.add("player 3");
+
+        TheBrain brain = new TheBrain(handList, playPile, turnList);
+        //System.out.println(brain.getNextTurn("player 1"));
+
+        brain.getPlayable();
+    }
+
 }

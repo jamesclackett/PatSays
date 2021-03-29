@@ -14,6 +14,14 @@
         android:text="@string/choose_cards"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Button
+        android:id="@+id/place_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/place"
+        app:layout_constraintTop_toTopOf="parent"
+        android:visibility="gone"/>
+
 
     <FrameLayout
         android:id="@+id/placeholder_2"
@@ -41,11 +49,22 @@
         app:layout_constraintTop_toBottomOf="@id/placeholder_0">
     </FrameLayout>
 
+    <ImageView
+        android:id="@+id/playpile_image_view"
+        android:layout_width="70dp"
+        android:layout_height="125dp"
+        app:layout_constraintTop_toBottomOf="@id/placeholder_1"
+        app:layout_constraintBottom_toTopOf="@id/hand_recycler_view"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/hand_recycler_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toTopOf="@id/my_table_fragment"/>
+
 
     <FrameLayout
         android:id="@+id/my_table_fragment"

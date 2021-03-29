@@ -45,7 +45,7 @@ public class Deck {
     }
 
     public ArrayList<ArrayList<Card>> dealHand(int players){
-        int handSize = getSize() / players;
+        int handSize = 9;
         ArrayList<ArrayList<Card>> handList = new ArrayList<>();
 
         for (int i = 0; i < players; i++){
@@ -57,5 +57,15 @@ public class Deck {
         }
 
         return handList;
+    }
+
+    public ArrayList<Card> getLeftoverCards(){
+        ArrayList<Card> leftoverList = new ArrayList<>();
+        int size = getSize();
+        for (int i = 0; i < size; i++){
+            leftoverList.add(drawCard());
+        }
+
+        return leftoverList;
     }
 }

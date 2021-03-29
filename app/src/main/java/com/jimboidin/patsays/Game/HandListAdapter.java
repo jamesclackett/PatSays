@@ -42,6 +42,7 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
     public void onBindViewHolder(@NonNull HandListAdapter.HandListViewHolder holder, int position) {
         Drawable face = mInflater.getContext().getResources().getDrawable(mHandList.get(position).getIconID());
         Drawable border = mInflater.getContext().getResources().getDrawable(R.drawable.border);
+        mSelectedList.clear();
 
         ImageView cardImage = holder.imageView;
         cardImage.setImageDrawable(face);
