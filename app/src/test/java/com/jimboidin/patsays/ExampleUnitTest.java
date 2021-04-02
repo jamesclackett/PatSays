@@ -85,6 +85,7 @@ public class ExampleUnitTest {
         handList.add(new Card("hearts", "Ace", R.drawable.hearts11));
         handList.add(new Card("hearts", "3", R.drawable.hearts3));
         handList.add(new Card("hearts", "5", R.drawable.hearts5));
+        handList.add(new Card("clubs", "5", R.drawable.clubs5));
 
         ArrayList<Card> playPile = new ArrayList<>();
         playPile.add(new Card("diamonds", "3", R.drawable.diamonds3));
@@ -98,9 +99,11 @@ public class ExampleUnitTest {
         turnList.add("player 3");
 
         TheBrain brain = new TheBrain(handList, playPile, turnList);
-        //System.out.println(brain.getNextTurn("player 1"));
 
-        brain.getPlayable();
+        TheBrain.sort(handList);
+        for (Card card : handList){
+            System.out.println(card.getValue());
+        }
     }
 
 }

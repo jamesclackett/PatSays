@@ -28,6 +28,7 @@ import java.util.Calendar;
 public class LobbyActivity extends AppCompatActivity {
     private final String TAG = "LobbyActivity";
     private String mHostName, mUsername;
+    private Button startButton;
     private FirebaseAuth mAuth;
     private ArrayList<String> mPlayerList;
     private DatabaseReference mCurrentGameDB;
@@ -47,7 +48,7 @@ public class LobbyActivity extends AppCompatActivity {
         mPlayerList = new ArrayList<>();
         mPlayersTextView = findViewById(R.id.player_list);
 
-        Button startButton = findViewById(R.id.start_button);
+        startButton = findViewById(R.id.start_button);
         startButton.setOnClickListener(v -> hostStartGame());
         Button inviteButton = findViewById(R.id.invite_button);
         inviteButton.setOnClickListener(v -> startSocialActivity());
@@ -100,6 +101,7 @@ public class LobbyActivity extends AppCompatActivity {
         else{
             mCurrentGameDB.child("Game_Info").child("start").setValue(true);
             Log.i(TAG, "Host started game");
+            startButton.setEnabled(false);
             startGameActivity();
         }
     }

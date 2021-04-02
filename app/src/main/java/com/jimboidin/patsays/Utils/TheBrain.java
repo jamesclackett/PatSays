@@ -5,15 +5,19 @@ import com.jimboidin.patsays.Game.Card;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class TheBrain {
     private ArrayList<Card> mHandList;
     private ArrayList<Card> mPlayPile;
     private final ArrayList<String> mTurnList;
-    private final List<String> orderedRegular =
+    private static final List<String> orderedRegular =
             Arrays.asList("4", "5", "6", "7", "8", "9", "Jack", "Queen", "King", "Ace");
-    private final List<String> special = Arrays.asList("2", "3", "10", "joker");
+    private static final List<String> special = Arrays.asList("2", "3", "10", "joker");
+    public static List<String> order =
+            Arrays.asList("4", "5", "6", "7", "8", "9", "Jack", "Queen", "King", "Ace", "2", "3", "10", "joker");
 
 
     public TheBrain(ArrayList<Card> handList, ArrayList<Card> playPile, ArrayList<String> turnList){
@@ -66,6 +70,21 @@ public class TheBrain {
     public boolean isActionable(String value){
         return value.equals("10") || value.equals("8") || value.equals("joker");
     }
+
+
+    public static ArrayList<Card> sort(ArrayList<Card> cards){
+        Collections.sort(cards, new SortByValue());
+        return cards;
+    }
+
+    static class SortByValue implements Comparator<Card> {
+        @Override
+        public int compare(Card cardA, Card cardB) {
+            return order.indexOf(cardA.getValue()) - order.indexOf(cardB.getValue());
+        }
+    }
+
+
 
 
 }

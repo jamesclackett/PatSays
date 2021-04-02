@@ -69,7 +69,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         setupOpponentFragments();
         initializeTurnListener();
         initializePlayPileListener();
-        startTimeoutHandler();
+        //startTimeoutHandler();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
         chooseButton.setOnClickListener(v -> placeChosenCards());
@@ -156,6 +156,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         ArrayList<Card> finalList = new ArrayList<>();
         for (int i = 0; i < 3; i++)
             finalList.add(mHandList.remove(i));
+        TheBrain.sort(mHandList);
 
         mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Cards").child("Final").setValue(finalList);
         mCurrentGameDB.child("Players").child(mAuth.getUid())
@@ -337,8 +338,13 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 if (snapshot.exists())
-                    if (snapshot.getValue(String.class).equals(mAuth.getUid()))
+                    if (snapshot.getValue(String.class).equals(mAuth.getUid())){
                         startChooser();
+                        for (Card card : mPlayPile){
+                            System.out.println("playpile test: " + card.getSuit() + ", " + card.getValue());
+                        }
+                    }
+
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
@@ -347,18 +353,20 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
 
     private void initializePlayPileListener(){
-        mPlayPileListener = mCurrentGameDB.child("Game_Info").child("currentCard").addValueEventListener(new ValueEventListener() {
+        mPlayPileListener = mCurrentGameDB.child("Game_Info").child("Play_Pile").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+                mPlayPile.clear();
                 if (snapshot.exists()) {
                     if (snapshot.getValue() != null) {
-                        Card card = snapshot.getValue(Card.class);
-                        mPlayPile.add(0, card);
-                        mPlayPileImage.setImageDrawable(getResources().getDrawable(card.getIconID()));
+                        for (DataSnapshot child : snapshot.getChildren()){
+                            Card card = child.getValue(Card.class);
+                            mPlayPile.add(card);
+                        }
+                        mPlayPileImage.setImageDrawable(getResources().getDrawable(mPlayPile.get(0).getIconID()));
                     }
                 }
                 else {
-                        mPlayPile.clear();
                         mPlayPileImage.setImageDrawable(null);
                 }
             }
@@ -386,8 +394,9 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private void handleNonPlay(String nextTurn){
         displayToast("no playable cards. picking up..");
         mHandList.addAll(mPlayPile);
+        TheBrain.sort(mHandList);
         mPlayPile.clear();
-        mCurrentGameDB.child("Game_Info").child("currentCard").removeValue();
+        mCurrentGameDB.child("Game_Info").child("Play_Pile").removeValue();
         mHandListAdapter.notifyDataSetChanged();
         mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
     }
@@ -395,11 +404,13 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private void handlePlay(){
         TheBrain brain = new TheBrain(mHandList, mPlayPile, mPlayerList);
         ArrayList<Card> playable = brain.getPlayable();
+        if (mSelectedList.size() == 0)
+            return;
 
         String value = mSelectedList.get(0).getValue();
         for (Card card : mSelectedList) {
             if (!playable.contains(card) || !card.getValue().equals(value)) {
-                displayToast("Selected unplayable card");
+                displayToast("Selected unplayable card(s)");
                 return;
             }
         }
@@ -420,8 +431,10 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         else {
             for (Card card : mSelectedList){
                 mHandList.remove(card);
-                mCurrentGameDB.child("Game_Info").child("currentCard").setValue(card);
+                mPlayPile.add(0, card);
             }
+            pickupCard();
+            mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
             mHandListAdapter.notifyDataSetChanged();
             Button placeButton = findViewById(R.id.place_button);
             placeButton.setVisibility(View.GONE);
@@ -430,8 +443,30 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
     }
 
+    private void pickupCard() {
+        mCurrentGameDB.child("Game_Info").child("Leftover_Cards").addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()){
+                    ArrayList<Card> temp = new ArrayList<>();
+                    for (DataSnapshot child : snapshot.getChildren()){
+                        temp.add(child.getValue(Card.class));
+                    }
+                    Card pickupCard = temp.remove(0);
+                    mHandList.add(pickupCard);
+                    TheBrain.sort(mHandList);
+                    mHandListAdapter.notifyItemInserted(mHandList.indexOf(pickupCard));
+                    mCurrentGameDB.child("Game_Info").child("Leftover_Cards").setValue(temp);
+                }
+
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
     private void play10() {
-        System.out.println("10 played");
+
     }
 
     private void playJoker() {
@@ -439,7 +474,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     }
 
     private void play8() {
-        System.out.println("8 played");
+
+
     }
 
 
