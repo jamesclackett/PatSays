@@ -15,6 +15,7 @@ import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -48,6 +49,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
     private ValueEventListener mDealtListener, mTurnListener, mPlayPileListener;
+
+    //This is a test commit to make sure contributions working correctly
 
 
     @Override
@@ -404,6 +407,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private void handlePlay(){
         TheBrain brain = new TheBrain(mHandList, mPlayPile, mPlayerList);
         ArrayList<Card> playable = brain.getPlayable();
+        String nextTurn = brain.getNextTurn(mAuth.getUid());
         if (mSelectedList.size() == 0)
             return;
 
@@ -421,10 +425,11 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                     play10();
                     break;
                 case "joker":
-                    playJoker();
+                    chooseJokerVictim();
                     break;
                 case "8":
-                    play8();
+                    String turn = brain.getNextTurn(nextTurn); //twice because 8 equals skip go
+                    play8(turn);
                     break;
             }
         }
@@ -433,13 +438,77 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                 mHandList.remove(card);
                 mPlayPile.add(0, card);
             }
-            pickupCard();
-            mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
             mHandListAdapter.notifyDataSetChanged();
+            mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
+            pickupCard();
             Button placeButton = findViewById(R.id.place_button);
             placeButton.setVisibility(View.GONE);
-            mCurrentGameDB.child("Game_Info").child("turn").setValue(brain.getNextTurn(mAuth.getUid()));
+            mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
         }
+
+    }
+
+    private void play10() {
+        for (Card card : mSelectedList)
+            mHandList.remove(card);
+        mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Game_Info").child("Play_Pile").removeValue();
+        pickupCard();
+        Button placeButton = findViewById(R.id.place_button);
+        placeButton.setVisibility(View.GONE);
+        mCurrentGameDB.child("Game_Info").child("turn").setValue("GO_AGAIN!");
+        mCurrentGameDB.child("Game_Info").child("turn").setValue(mAuth.getUid());
+
+    }
+
+    private void chooseJokerVictim(){
+        FrameLayout fl0 = findViewById(R.id.placeholder_0);
+        FrameLayout fl1 = findViewById(R.id.placeholder_1);
+        FrameLayout fl2 = findViewById(R.id.placeholder_2);
+
+        ArrayList<FrameLayout> flList = new ArrayList<>();
+        flList.add(fl0);
+        flList.add(fl1);
+        flList.add(fl2);
+
+        for (FrameLayout fl : flList){
+            fl.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    System.out.println("frame_layout id : "+ fl.getId());
+                }
+            });
+        }
+
+
+    }
+
+    private void playJoker() {
+        String victim = "hahah";
+        for (Card card : mSelectedList)
+            mHandList.remove(card);
+        mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Players").child(victim).child("Joker").setValue(true);
+        pickupCard();
+        Button placeButton = findViewById(R.id.place_button);
+        placeButton.setVisibility(View.GONE);
+        mCurrentGameDB.child("Game_Info").child("turn").setValue(victim);
+
+
+    }
+
+    private void play8(String nextTurn) {
+        for (Card card : mSelectedList){
+            mHandList.remove(card);
+            mPlayPile.add(0, card);
+        }
+        mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
+        pickupCard();
+        Button placeButton = findViewById(R.id.place_button);
+        placeButton.setVisibility(View.GONE);
+        mCurrentGameDB.child("Game_Info").child("turn").setValue("SKIP!");
+        mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
 
     }
 
@@ -463,19 +532,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
-    }
-
-    private void play10() {
-
-    }
-
-    private void playJoker() {
-        System.out.println("joker played");
-    }
-
-    private void play8() {
-
-
     }
 
 
