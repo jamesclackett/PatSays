@@ -14,6 +14,14 @@ import com.jimboidin.patsays.R;
 
 import java.util.ArrayList;
 
+/*
+    HandListAdapter functions as a typical RecyclerVew.Adapter.
+    The RecyclerView contains only ImageViews, who's icons are decided by the data contained
+    in Hand List
+    The main difference is the selection functionality which allows
+    GameActivity to be told what cards the user currently has selected
+*/
+
 public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandListViewHolder> {
     private ArrayList<Card> mHandList, mSelectedList;
     private LayoutInflater mInflater;

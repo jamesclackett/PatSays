@@ -15,19 +15,21 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.jimboidin.patsays.R;
 
-public class SocialActivity extends AppCompatActivity implements LeaveSocialListener,
-        LobbyListener {
+
+/*
+    SocialActivity consists of a TabLayout and Page Adapter to display the 3 social fragments:
+        > FriendsFragment, InvitationsFragment, RecentPlayersFragment
+        > Uses two interfaces to allow communication between these fragments and itself.
+*/
+public class SocialActivity extends AppCompatActivity implements LeaveSocialListener, LobbyListener {
     private final String TAG = "SocialActivity";
     private Boolean mInLobby;
-    private String mHostName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_social);
         mInLobby = getIntent().getBooleanExtra("in_lobby", false);
-        mHostName = getIntent().getStringExtra("host_name");
-
 
         SocialPagerAdapter socialPagerAdapter = new SocialPagerAdapter(getSupportFragmentManager(), getLifecycle());
         ViewPager2 pager = findViewById(R.id.social_pager);
@@ -56,25 +58,34 @@ public class SocialActivity extends AppCompatActivity implements LeaveSocialList
         tabLayoutMediator.attach();
     }
 
-
+    /*
+        INTERFACE METHODS (BELOW):
+            > allow communication between this activity and its fragments
+            > onLeave called when user accepts invite and is about to be taken to GameActivity.
+            > SocialActivity is passed extras when started from LobbyActivity,
+                askIsLobby() and getHostName() are used by fragments to know what way they should
+                behave (i.e whether started from Lobby or Main page)
+     */
     @Override
     public void onLeave() {
         finish();
     }
-
 
     @Override
     public Boolean askIsLobby() {
         return mInLobby;
     }
 
+    /*
     @Override
     public String getHostName() {
         return mHostName;
     }
+     */
 
 }
 
+// Pager Adapter for the social fragments. No additional functions.
 class SocialPagerAdapter  extends FragmentStateAdapter {
 
     public SocialPagerAdapter(@NonNull FragmentManager fm, @NonNull Lifecycle lifecycle) {

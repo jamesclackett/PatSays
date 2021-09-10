@@ -13,19 +13,21 @@ import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 import com.jimboidin.patsays.Auth.LoginActivity;
 
+
+/*
+    FirebaseMessagingService is used to allow the device to listen for notifications
+ */
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private final String TAG = "FBMessagingService";
-    private FirebaseAuth mAuth;
 
-
-
+    // This method is called when the app is first installed (or if token changes)
     @Override
     public void onNewToken(@NonNull String s) {
         super.onNewToken(s);
-        mAuth = FirebaseAuth.getInstance();
         Log.i(TAG, "NEW TOKEN: " + s);
     }
 
+    // This method handles the notification if we are inside the app. Displays a toast to user.
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);

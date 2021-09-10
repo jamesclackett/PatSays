@@ -20,8 +20,8 @@
 
 
         <activity android:name=".Social.SocialActivity" />
-        <activity android:name=".LobbyActivity" />
-        <activity android:name=".GameActivity" />
+        <activity android:name=".Game.LobbyActivity" />
+        <activity android:name=".Game.GameActivity" />
         <activity android:name=".MainActivity" />
         <activity android:name=".Auth.SignUpActivity" />
         <activity android:name=".Auth.LoginActivity">

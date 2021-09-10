@@ -10,6 +10,11 @@ import com.jimboidin.patsays.R;
 
 import java.util.ArrayList;
 
+/*
+    DeckBuilder separates the creation of the card list from the rest of code.
+    It creates an entire deck of cards and adds each card to an ArrayList of type Card
+    DeckBuilder avoids having the below code damaging the Deck class's readability.
+*/
 public class DeckBuilder {
     ArrayList<Card> cardArrayList = new ArrayList<>();
 

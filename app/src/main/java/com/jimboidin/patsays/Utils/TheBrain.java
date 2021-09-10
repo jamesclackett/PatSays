@@ -9,6 +9,18 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/*
+    The Brain separates some of the game logic from GameActivity.
+    It can:
+        > calculate who's turn is next
+        > Which cards in a list are playable against a single card
+        > return if a card is an actionable (ie 10, joker, 8)
+        > Sort the cards in ascending order.
+
+    Note: in TheBrain, 7 and 8 are not included in the 'special' list because they cannot
+    be played at any time.
+*/
+
 public class TheBrain {
     private ArrayList<Card> mHandList;
     private ArrayList<Card> mPlayPile;
@@ -27,6 +39,10 @@ public class TheBrain {
     }
 
 
+    // returns the list of cards that can be played on top of the most recent play pile card
+    // special cards are always added
+    // reverses the checking behaviour if a 7 has been played
+    // otherwise, uses index number to know if a card is greater or equal (ie can be played)
     public ArrayList<Card> getPlayable(){
         ArrayList<Card> playableList = new ArrayList<>();
 
@@ -58,6 +74,8 @@ public class TheBrain {
         return playableList;
     }
 
+    // As turn list is specified on creation of TheBrain, all that is needed is to calculate
+    // the next position in the list to get the next turn
     public String getNextTurn(String currentTurn){
         //returns uid key of next player
         int index = mTurnList.indexOf(currentTurn);
@@ -67,11 +85,17 @@ public class TheBrain {
             return mTurnList.get(index+1);
     }
 
+    // Actionable Cards are those which change the behavior of the game briefly and
+    // require some extra code.
+    // While 7 is technically an actionable card, no extra code is needed other than
+    // an extra if condition in getPlayable(), so it is not included here.
     public boolean isActionable(String value){
         return value.equals("10") || value.equals("8") || value.equals("joker");
     }
 
 
+    // uses collections.sort and sorts based on the cards position in the ordered list above
+    // TODO- maybe change return value to void
     public static ArrayList<Card> sort(ArrayList<Card> cards){
         Collections.sort(cards, new SortByValue());
         return cards;

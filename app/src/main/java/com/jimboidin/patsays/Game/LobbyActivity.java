@@ -1,16 +1,12 @@
-package com.jimboidin.patsays;
+package com.jimboidin.patsays.Game;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.text.InputType;
 import android.util.Log;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -20,10 +16,27 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.jimboidin.patsays.R;
 import com.jimboidin.patsays.Social.SocialActivity;
 
 import java.util.ArrayList;
-import java.util.Calendar;
+
+/*
+    An Activity for the pre-game lobby.
+
+    Has a single host who can invite other players. Once joined, other players
+    may invite others too.
+    The game may only be started when the lobby has more than one person.
+    A maximum of four players may be in the lobby
+
+    LobbyActivity shows a TextView of all the players currently in the lobby ('/n' delimited) and
+    has a 'start game' button that only the host may press, and an invite button that all players
+    may use.
+
+    When LobbyActivity is started, it is given the hostname and a boolean
+     mIsHost. When LobbyActivity is started by a host, it creates the game within the database.
+    If a non-host player starts LobbyActivity, they are added to the game database
+*/
 
 public class LobbyActivity extends AppCompatActivity {
     private final String TAG = "LobbyActivity";
@@ -44,7 +57,7 @@ public class LobbyActivity extends AppCompatActivity {
         mIsHost = getIntent().getBooleanExtra("host", false);
         mHostName = getIntent().getStringExtra("host_name");
         mAuth = FirebaseAuth.getInstance();
-        getMyUsername();
+        getMyProfile();
         mPlayerList = new ArrayList<>();
         mPlayersTextView = findViewById(R.id.player_list);
 
@@ -62,7 +75,7 @@ public class LobbyActivity extends AppCompatActivity {
     }
 
 
-    private void getMyUsername(){
+    private void getMyProfile(){
         FirebaseDatabase.getInstance().getReference().child("Users")
                 .child(mAuth.getUid()).child("username").addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -75,6 +88,7 @@ public class LobbyActivity extends AppCompatActivity {
         });
     }
 
+    // method to create the game in the database. Only called by the host's application
     private void createGameServer(){
         System.out.println("hostname: " + mHostName);
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
@@ -85,6 +99,7 @@ public class LobbyActivity extends AppCompatActivity {
         setupPlayerListener();
     }
 
+    // called by non-hosts. Adds user to 'Games/{host}/Players/' and /Games/Game_Info/Players_Active/'
     private void joinGameServer() {
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
         mCurrentGameDB.child("Players").child(mAuth.getUid()).setValue(true);
@@ -101,13 +116,14 @@ public class LobbyActivity extends AppCompatActivity {
         else{
             mCurrentGameDB.child("Game_Info").child("start").setValue(true);
             Log.i(TAG, "Host started game");
-            startButton.setEnabled(false);
+            startButton.setEnabled(false); // prevents duplicate starts
             startGameActivity();
         }
     }
 
-    //updated mPlayersTextView if a player joins/leaves game
-    //Closes game if the server no longer exists (host left)
+    // updates the recent players list in the users database
+    // updates mPlayersTextView if a player joins/leaves game
+    // Closes game if the server no longer exists (host left)
     private void setupPlayerListener(){
         DatabaseReference recentPlayersDB = FirebaseDatabase.getInstance().getReference()
                 .child("Users").child(mAuth.getUid()).child("Recent_Players");
@@ -128,7 +144,7 @@ public class LobbyActivity extends AppCompatActivity {
                 else {
                     displayToast("Host has left game: exiting lobby");
                     Log.i(TAG, "mPlayerListener: Game/key/Players/ snapshot doesn't exist");
-                    closeGame();
+                    onBackPressed(); // exit lobby
                 }
             }
             @Override
@@ -155,16 +171,18 @@ public class LobbyActivity extends AppCompatActivity {
 
 
 
+    // Starts GameActivity and passes in host_name, player_list and is_host.
+    // removes Listeners and tells lobby activity to finish
     private void startGameActivity() {
         Intent intent = new Intent(this, GameActivity.class);
         intent.putExtra("host_name", mHostName);
         intent.putExtra("is_host", mIsHost);
         intent.putStringArrayListExtra("player_list", mPlayerList);
         startActivity(intent);
-        removeListeners();
         finish();
     }
 
+    // initiated by invite button. passes the hostname and in_lobby == true.
     private void startSocialActivity() {
         Intent intent = new Intent(this, SocialActivity.class);
         intent.putExtra("in_lobby", true);
@@ -172,16 +190,17 @@ public class LobbyActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    // terminates the listeners so that they don't continue to run after leaving the lobby
     private void removeListeners(){
         if (mPlayerListener != null)
             mCurrentGameDB.child("Players").removeEventListener(mPlayerListener);
         if (mStartListener != null)
             mCurrentGameDB.child("Game_Info").child("start").removeEventListener(mStartListener);
+        Log.i(TAG, "removeListeners: listeners removed");
     }
 
-    //closes GameServer if host and leaves server if non-host, finishes activity for all
+    // closes GameServer if host and removes name from server if non-host
     private void closeGame(){
-        removeListeners();
         if (mIsHost){
             mCurrentGameDB.removeValue();
             Log.i(TAG, "closeGame: GameServer destroyed");
@@ -190,18 +209,24 @@ public class LobbyActivity extends AppCompatActivity {
             mCurrentGameDB.child("Players").child(mAuth.getUid()).removeValue();
             Log.i(TAG, "closeGame: left GameServer");
         }
-        finish();
     }
 
+    // GameServer should be cleaned up on back pressed
     @Override
     public void onBackPressed() {
         closeGame();
         super.onBackPressed();
     }
 
+    @Override
+    protected void onDestroy() {
+        removeListeners();
+        Log.i(TAG, "LobbyActivity destroyed");
+        super.onDestroy();
+    }
+
     private void displayToast(String message) {
         Toast.makeText(LobbyActivity.this, message,
                 Toast.LENGTH_SHORT).show();
     }
-
 }

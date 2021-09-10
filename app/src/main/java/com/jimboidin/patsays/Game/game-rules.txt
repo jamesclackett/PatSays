@@ -1,0 +1,46 @@
+ ===========================================================================================
+    PAT SAYS GAME EXPLANATION
+    ---------------------------
+
+    Pat Says is a simple card game where the object of the game is to be the first player with no
+    cards remaining (in their hand or on the table).
+
+    Players begin with 9 cards:
+        > 3 face-down on table (the player does not know what these cards are)
+        > 3 face-up on table (the player chooses these at the beginning of game)
+        > 3 in their hand.
+
+    The remaining cards of the deck, are face-down on the table in the 'leftover pile'
+
+    Players take turns playing a card. The card played must be higher than the card previously
+    played (in the 'play pile') *See card value explanation below*
+    While there are still cards remaining in the leftover pile, players must pick up a single card
+    from it every time they play a card.
+    NOTE: It is possible to play multiple cards of the same value, if so, the player still only
+    needs to pickup a single card from the leftover pile.
+
+    If a player is unable to play a card (ie. they have no card of higher value, then they must
+    pickup the entire play pile.
+
+    When a player wins the game (has no more cards), the game continues with the remaining players
+    until only one person has cards left and then it ends.
+
+    The value of cards is numeric (ie a 6 is higher than a 4) Suit is irrelevant.
+    There are special cards, some of which can be played at any time.
+    Ace is the highest non-special card
+
+    Special Cards:
+    --------------
+        (2) -- Reset. Value of play pile set to 0. Can be played at any time
+        (3) -- Invisible. Play pile value remains same as previous card. Can be played at any time
+        (7) -- Reverse. Next play must be lower than 7. *Cannot be played at any time*
+        (8) -- Skip. Skips next player. *Cannot be played at any time*
+        (10) -- Burn play pile and go again. Can be played at any time
+        (Joker) -- Choose a player to pickup all play pile cards. The turn also switches to that player
+
+    RULES OF NOTE:
+    > Multiple cards can be played at once (ie. 5,5,5)
+    > Calling 4 [Value] burns deck and lets player go again
+        for example, if a player has four 6s they can play all and it acts like a 10 card
+        also, a player could have 2 6s and know there are 2 6s already played, and call this too.
+    > If a player calls 4 and is incorrect, they must pickup entire play pile.

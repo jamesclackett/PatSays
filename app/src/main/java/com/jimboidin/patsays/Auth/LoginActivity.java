@@ -25,6 +25,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.MainActivity;
 import com.jimboidin.patsays.R;
 
+// LoginActivity is the Launch Activity of Pat Says
 public class LoginActivity extends AppCompatActivity {
     private final String TAG = "LoginActivity";
     private FirebaseAuth mAuth;
@@ -32,6 +33,12 @@ public class LoginActivity extends AppCompatActivity {
     private EditText mPasswordEditText;
     private DatabaseReference mUserDB;
 
+    /*
+        Checks if user is logged in
+        Initializes the email and password edit texts
+        Initializes the login and sign up buttons
+        Gets a reference to /Users in the database.
+    */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,9 +56,12 @@ public class LoginActivity extends AppCompatActivity {
         Button signUpButton = findViewById(R.id.sign_up_button);
         signUpButton.setOnClickListener(v -> launchSignUpActivity());
 
+        // reference to '/Users/' in database
         mUserDB = FirebaseDatabase.getInstance().getReference().child("Users");
     }
 
+
+    // Uses FirebaseAuth to check if user is already signed in. Starts MainActivity if so.
     private void userIsLoggedIn() {
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
@@ -66,12 +76,16 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
+    // This method is called by the Sign Up Button
+    // See onActivityResult method below
     int LAUNCH_SIGNUP_ACTIVITY = 1;
     private void launchSignUpActivity() {
         Intent intent = new Intent(this, SignUpActivity.class);
         startActivityForResult(intent, LAUNCH_SIGNUP_ACTIVITY);
     }
 
+    // If the SignUpActivity returns OK, then calls signUpNewUser with the user-input details
+    // If result not OK then abort and log.
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -90,9 +104,11 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         }
-
     }
 
+    // Only called by onActivityResult()
+    // Creates the user with email and password in FirebaseAuth and calls createUserDB() if successful
+    // finally, calls userIsLoggedIn
     private void signUpNewUser(String username, String email, String password) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -109,6 +125,7 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+    // This method is called by the Login Button
     private void signInExistingUser() {
         String email = mEmailEditText.getText().toString();
         String password = mPasswordEditText.getText().toString();
@@ -127,6 +144,8 @@ public class LoginActivity extends AppCompatActivity {
                 });
     }
 
+
+    // Adds the user's email and username to the database in '/Users/'
     private void createUserDB(String username, String email) {
         mUserDB.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
@@ -136,7 +155,6 @@ public class LoginActivity extends AppCompatActivity {
                     mUserDB.child(mAuth.getUid()).child("username").setValue(username);
                 }
             }
-
             @Override
             public void onCancelled(@NonNull DatabaseError error) {}
         });

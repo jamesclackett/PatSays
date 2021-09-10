@@ -29,6 +29,15 @@ import com.jimboidin.patsays.R;
 
 import javax.crypto.Cipher;
 
+/*
+    A Fragment that shows the user their list of recent players.
+    Allows the user to send recent players a friend request or to invite them
+    to a game (if in lobby)
+    Again similar in functionality to FriendsFragment.
+    Uses ListViews & Adapters to present the data to user and context menu's to interact with it
+    Please refer to FriendsFragment for explanation on the below methods. They differ only in
+    their names and how they access database data, but their logic is very similar.
+*/
 
 public class RecentPlayersFragment extends Fragment {
     private final String TAG = "RecentPlayersFragment";
@@ -36,7 +45,6 @@ public class RecentPlayersFragment extends Fragment {
     private Context mContext;
     private FirebaseAuth mAuth;
     private Boolean mInLobby;
-    private String mHostName;
     private ListView mRecentListView;
     private ArrayAdapter<User> mRecentAdapter;
     private DatabaseReference mRecentDB;
@@ -61,9 +69,6 @@ public class RecentPlayersFragment extends Fragment {
         if (getView() != null){
             mAuth = FirebaseAuth.getInstance();
             mInLobby = mLobbyListener.askIsLobby();
-
-            if (mInLobby)
-                mHostName = mLobbyListener.getHostName();
 
             getMyProfile();
             initializeListView();
@@ -159,7 +164,7 @@ public class RecentPlayersFragment extends Fragment {
         }
         if (item.getItemId() == R.id.invite_recent){
             User user = (User) mRecentListView.getAdapter().getItem(info.position);
-            User.invite(myProfile, user, mHostName);
+            User.invite(myProfile, user);
         }
         return super.onContextItemSelected(item);
     }

@@ -10,6 +10,10 @@ import android.widget.EditText;
 
 import com.jimboidin.patsays.R;
 
+/*
+    SignUpActivity is a simple UI Activity that allows user to create login details
+    These details are then passed back to LoginActivity.
+ */
 public class SignUpActivity extends AppCompatActivity {
     private EditText mUsernameEditText, mEmailEditText, mPasswordEditText;
 
@@ -27,6 +31,7 @@ public class SignUpActivity extends AppCompatActivity {
     }
 
 
+    // Places the user input details in a Bundle and returns this to LoginActivity
     private void register() {
         Bundle bundle = new Bundle();
         bundle.putString("username", mUsernameEditText.getText().toString());
@@ -39,6 +44,7 @@ public class SignUpActivity extends AppCompatActivity {
         finish();
     }
 
+    // return the RESULT_CANCELED to LoginActivity
     @Override
     public void onBackPressed() {
         super.onBackPressed();

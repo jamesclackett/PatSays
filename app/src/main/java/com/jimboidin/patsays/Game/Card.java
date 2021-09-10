@@ -5,12 +5,12 @@ import android.media.Image;
 import androidx.annotation.NonNull;
 
 //card values will correspond to face numbers - i.e. 2 will have a value of 2,
-//ace will have a value of 11, jack will be 12 etc..
+//ace will have a value of "Ace", jack will have a value of "Jack" etc
 
 public class Card {
     private String suit;
     private String value;
-    private int iconID;
+    private int iconID; // reference to the id of resource image for card
     private boolean isSelected;
 
     public Card(){ }

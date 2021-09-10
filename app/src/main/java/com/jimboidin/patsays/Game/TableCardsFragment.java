@@ -20,10 +20,19 @@ import com.jimboidin.patsays.R;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+    Fragment to handle the logic and UI of players' on-table cards.
+    As Pat Says allows multi-player, this avoids duplicating the same code for each player.
+    Displays 3 face-down (hidden) cards, and three face-up.
+    Card icons are represented as image views, and the actual card info (suit etc) is stored in
+    an ArrayList<Card>
+
+
+ */
 
 public class TableCardsFragment extends Fragment {
-    private ImageView mFinalCard0, mFinalCard1, mFinalCard2;
-    private ImageView mChosenCard0, mChosenCard1, mChosenCard2;
+    private ImageView mFinalCard0, mFinalCard1, mFinalCard2; // the face-down card icons
+    private ImageView mChosenCard0, mChosenCard1, mChosenCard2; // the face-up cards icons.
     private ArrayList<Card> mChosenList, mFinalList;
     private DatabaseReference mDBRef;
     private Context mContext;
@@ -35,6 +44,7 @@ public class TableCardsFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_table_cards, container, false);
     }
 
+    // Give the fragments ImageViews a reference to their layout.
     @Override
     public void onStart() {
         super.onStart();
@@ -56,6 +66,8 @@ public class TableCardsFragment extends Fragment {
         super.onAttach(context);
     }
 
+    // Sets the image icons of the chosen cards
+    // Method is called when a change in the database (in chosen cards section) occurs
     public void setChosenCards(ArrayList<Card> chosenList){
         mChosenList = chosenList;
         mChosenCard0.setImageDrawable(mContext.getResources().getDrawable(mChosenList.get(0).getIconID()));
@@ -68,6 +80,7 @@ public class TableCardsFragment extends Fragment {
 
     private void setDBListeners(){
         //setChosenListener:
+        // Waits for a change in the database and updates the fragments UI accordingly
         mDBRef.child("Chosen").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -84,6 +97,7 @@ public class TableCardsFragment extends Fragment {
             public void onCancelled(@NonNull DatabaseError error) { }
         });
         //set Final Listener
+        // Waits for a change in the database and updates the fragments final cards list
         mDBRef.child("Final").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -101,6 +115,8 @@ public class TableCardsFragment extends Fragment {
         });
     }
 
+    // used by parent activity after creating the fragment.
+    // Tells the fragment the location to set up its dataChange listeners
     public void setDBRef(DatabaseReference ref){
         mDBRef = ref;
     }
