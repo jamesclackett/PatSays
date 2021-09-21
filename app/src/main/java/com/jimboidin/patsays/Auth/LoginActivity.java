@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -135,11 +136,11 @@ public class LoginActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
                             createUserDB(email, email);
+                            checkAlreadySignedIn();
                             Log.d(TAG, "sign in user: success");
                         } else {
                             Log.w(TAG, "sign in user: failure", task.getException());
                         }
-                        userIsLoggedIn();
                     }
                 });
     }
@@ -159,6 +160,33 @@ public class LoginActivity extends AppCompatActivity {
             public void onCancelled(@NonNull DatabaseError error) {}
         });
     }
+
+    // Check if already signed in to prevent concurrent logins
+    // if not already signed in OR no valuefor "signedIn" then set tp true and call userIsLoggedIn()
+    private void checkAlreadySignedIn(){
+        mUserDB.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.child(mAuth.getUid()).hasChild("signedIn")){
+                    if (snapshot.child(mAuth.getUid()).child("signedIn").getValue(Boolean.class)) {
+                        mAuth.signOut();
+                        displayToast("Logged in on another device");
+                    }
+                    else {
+                        mUserDB.child(mAuth.getUid()).child("signedIn").setValue(true);
+                        userIsLoggedIn();
+                    }
+                }
+                else {
+                    mUserDB.child(mAuth.getUid()).child("signedIn").setValue(true);
+                    userIsLoggedIn();
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {}
+        });
+    }
+
 
     private void displayToast(String message) {
         Toast.makeText(LoginActivity.this, message,

@@ -12,6 +12,9 @@ import android.widget.TextView;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.GetTokenResult;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import com.google.firebase.messaging.FirebaseMessaging;
@@ -38,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mAuth = FirebaseAuth.getInstance();
-        updateToken();
+        updateNotificationToken();
 
         TextView userTextView = findViewById(R.id.username_text_view);
         String info = "Signed in as \n " + mAuth.getCurrentUser().getEmail();
@@ -54,9 +57,9 @@ public class MainActivity extends AppCompatActivity {
         mSocial.setOnClickListener(v -> startSocialActivity());
     }
 
-    // Tokens may change, so this updates the users' token in the database.
+    // Tokens may change, so this updates the users' notification token in the database.
     // Only called by onCreate of this activity
-    private void updateToken() {
+    private void updateNotificationToken() {
         FirebaseMessaging.getInstance().getToken().addOnCompleteListener(new OnCompleteListener<String>() {
             @Override
             public void onComplete(@NonNull Task<String> task) {
@@ -80,7 +83,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // Logs user out with FirebaseAuth built-in method and takes user to Login page
+    // lets backend know that the user is now logged out
     private void logOut() {
+        FirebaseDatabase.getInstance().getReference().child("Users").child(mAuth.getUid()).child("signedIn").setValue(false);
         FirebaseMessaging.getInstance().deleteToken(); // so users don't keep getting notifications
         mAuth.signOut();
         Log.d(TAG, "user signed out");
