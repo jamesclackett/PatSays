@@ -76,8 +76,6 @@ public class FriendsFragment extends Fragment {
 
             getMyProfile();
             initializeListViews();
-            fillFriendsList();
-            fillRequestsList();
             attachContextMenus();
 
             FloatingActionButton fab = getView().findViewById(R.id.add_friend_fab);
@@ -108,6 +106,8 @@ public class FriendsFragment extends Fragment {
         mRequestAdapter = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1);
         mFriendsListView.setAdapter(mFriendAdapter);
         mRequestsListView.setAdapter(mRequestAdapter);
+        fillFriendsList();
+        fillRequestsList();
     }
 
     // Populates the friends list with data from database.
