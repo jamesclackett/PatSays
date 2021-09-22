@@ -28,10 +28,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     // This method handles the notification if we are inside the app. Displays a toast to user.
+    // Note: appears that the firebase function needs to contain 'data' in the payload for this
+    // method to be triggered
     @Override
     public void onMessageReceived(@NonNull RemoteMessage remoteMessage) {
         super.onMessageReceived(remoteMessage);
         String message = remoteMessage.getNotification().getBody();
+        Log.i(TAG, "body of message: " + message);
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(() -> Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show());
     }
