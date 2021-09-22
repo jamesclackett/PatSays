@@ -162,7 +162,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     // Check if already signed in to prevent concurrent logins
-    // if not already signed in OR no valuefor "signedIn" then set tp true and call userIsLoggedIn()
+    // if not already signed in OR no value for "signedIn" then set tp true and call userIsLoggedIn()
     private void checkAlreadySignedIn(){
         mUserDB.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override

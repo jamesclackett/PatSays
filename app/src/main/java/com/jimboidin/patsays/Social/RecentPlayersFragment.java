@@ -72,7 +72,6 @@ public class RecentPlayersFragment extends Fragment {
 
             getMyProfile();
             initializeListView();
-            fillRecentList();
             attachContextMenu();
         }
     }
@@ -95,6 +94,7 @@ public class RecentPlayersFragment extends Fragment {
         mRecentListView = getView().findViewById(R.id.recent_list_view);
         mRecentAdapter = new ArrayAdapter<>(mContext, android.R.layout.simple_list_item_1);
         mRecentListView.setAdapter(mRecentAdapter);
+        fillRecentList();
     }
 
 
