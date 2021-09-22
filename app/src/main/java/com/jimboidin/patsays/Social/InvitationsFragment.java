@@ -75,7 +75,6 @@ public class InvitationsFragment extends Fragment {
             fab.setOnClickListener(v -> openInviteDialog());
             getMyProfile();
             initializeListView();
-            getInvitations();
         }
 
     }
@@ -108,6 +107,7 @@ public class InvitationsFragment extends Fragment {
                 mInvitesDB.child(hostName).removeValue();
             }
         });
+        getInvitations();
     }
 
     // Gets (and listens for) any invitations added to the database.
