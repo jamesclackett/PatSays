@@ -52,6 +52,7 @@ public class User {
 
     // If the user accepts a friend request, add to database for user & friend.
     // Removes the entry from /FriendRequests
+    // TODO make a firebase function that takes care of this
     public static void handleRequest(User myProfile, User user, boolean isAccept) {
         if (isAccept){
             FirebaseDatabase.getInstance().getReference()

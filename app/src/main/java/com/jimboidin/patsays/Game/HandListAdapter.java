@@ -38,6 +38,8 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
     }
 
 
+
+
     @NonNull
     @Override
     public HandListAdapter.HandListViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -58,7 +60,7 @@ public class HandListAdapter extends RecyclerView.Adapter<HandListAdapter.HandLi
         cardImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Card card = mHandList.get(position);
+                Card card = mHandList.get(holder.getLayoutPosition());
                 if (!mSelectedList.contains(card)){
                     mSelectedList.add(card);
                     cardImage.setBackground(border);

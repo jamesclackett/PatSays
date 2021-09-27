@@ -291,10 +291,9 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     @Override
     public void itemSelected(ArrayList<Card> selectedList) { //gets selectedList sent from HandListAdapter interface
         mSelectedList = selectedList;
-        for (Card card : mSelectedList){
+        for (Card card : mSelectedList) {
             System.out.println(card.getSuit() + " " + card.getValue());
         }
-        System.out.println("==========");
     }
 
     // called when the player presses Place Cards button at the beginning of game
