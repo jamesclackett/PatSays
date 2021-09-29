@@ -21,8 +21,11 @@
 
         <activity android:name=".Social.SocialActivity" />
         <activity android:name=".Game.LobbyActivity" />
-        <activity android:name=".Game.GameActivity" />
-        <activity android:name=".MainActivity" />
+        <activity
+            android:name=".Game.GameActivity"
+            android:theme="@style/Theme.PatSaysNoActionBar">
+        </activity>
+        <activity android:name=".MainActivity"/>
         <activity android:name=".Auth.SignUpActivity" />
         <activity android:name=".Auth.LoginActivity">
             <intent-filter>

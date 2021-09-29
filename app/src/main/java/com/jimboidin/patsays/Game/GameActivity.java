@@ -3,6 +3,7 @@ package com.jimboidin.patsays.Game;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -83,13 +85,17 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private String mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
-    private ValueEventListener mDealtListener, mTurnListener, mPlayPileListener;
+    private ValueEventListener mDealtListener, mTurnListener, mPlayPileListener, mLeftoverListener;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+
+        // Set up the custom toolbar
+        Toolbar myToolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(myToolbar);
 
         mAuth = FirebaseAuth.getInstance();
 
@@ -108,6 +114,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         setupOpponentFragments();
         initializeTurnListener();
         initializePlayPileListener();
+        initializeLeftoverListener();
         //startTimeoutHandler();
 
         Button chooseButton = findViewById(R.id.choose_cards_button);
@@ -314,38 +321,6 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         }
     }
 
-    // Clears up the game and its associated listeners & data before exiting activity
-    private void closeGameServer(){
-        Log.i(TAG, "gameserver close called");
-        removeListeners();
-        mCurrentGameDB.removeValue(); //destroy gameServer
-        endTimeoutHandler();
-        finish();
-    }
-
-    // Terminates listeners so they do not continue to run after activity is destroyed
-    private void removeListeners(){
-        if (mDealtListener != null) {
-            mCurrentGameDB.child("Players").child(mAuth.getUid())
-                    .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
-        }
-        if (mTurnListener != null)
-            mCurrentGameDB.child("Game_Info").child("turn").removeEventListener(mTurnListener);
-        if (mPlayPileListener != null)
-            mCurrentGameDB.child("currentCard").removeEventListener(mPlayPileListener);
-    }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        closeGameServer();
-    }
-
-    private void displayToast(String message) {
-        Toast.makeText(GameActivity.this, message,
-                Toast.LENGTH_SHORT).show();
-    }
-
 
     /*
         The below code is BAD. I will change it the minute I figure out a better way..
@@ -447,6 +422,26 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                     }
 
             }
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) { }
+        });
+    }
+
+    // Updates the leftover text view every time a card is taken from the leftover pile
+    private void initializeLeftoverListener(){
+        mLeftoverListener = mCurrentGameDB.child("Game_Info").child("Leftover_Cards").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                TextView leftoverTV = findViewById(R.id.leftoverTextView);
+                if (snapshot.exists()){
+                    long leftover = snapshot.getChildrenCount();
+                    String str = Long.toString(leftover);
+                    leftoverTV.setText(str);
+                }
+                else
+                    leftoverTV.setText("0");
+            }
+
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
@@ -654,5 +649,39 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         });
     }
 
+
+    // Clears up the game and its associated listeners & data before exiting activity
+    private void closeGameServer(){
+        Log.i(TAG, "gameserver close called");
+        removeListeners();
+        mCurrentGameDB.removeValue(); //destroy gameServer
+        endTimeoutHandler();
+        finish();
+    }
+
+    // Terminates listeners so they do not continue to run after activity is destroyed
+    private void removeListeners(){
+        if (mDealtListener != null) {
+            mCurrentGameDB.child("Players").child(mAuth.getUid())
+                    .child("Cards").child("In_Hand").removeEventListener(mDealtListener);
+        }
+        if (mTurnListener != null)
+            mCurrentGameDB.child("Game_Info").child("turn").removeEventListener(mTurnListener);
+        if (mPlayPileListener != null)
+            mCurrentGameDB.child("currentCard").removeEventListener(mPlayPileListener);
+        if (mLeftoverListener != null)
+            mCurrentGameDB.child("Game_Info").child("Leftover_Cards").removeEventListener(mLeftoverListener);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        closeGameServer();
+    }
+
+    private void displayToast(String message) {
+        Toast.makeText(GameActivity.this, message,
+                Toast.LENGTH_SHORT).show();
+    }
 
 }

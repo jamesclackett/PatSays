@@ -7,12 +7,31 @@
     android:layout_height="match_parent"
     tools:context=".Game.GameActivity">
 
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:layout_constraintTop_toTopOf="parent"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+        <TextView
+            android:id="@+id/leftoverTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="right"
+            android:layout_marginEnd="10dp"
+            android:layout_marginRight="10dp"
+            android:text="leftover"
+             />
+    </androidx.appcompat.widget.Toolbar>
+
     <Button
         android:id="@+id/choose_cards_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/choose_cards"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/toolbar" />
 
     <Button
         android:id="@+id/place_button"
