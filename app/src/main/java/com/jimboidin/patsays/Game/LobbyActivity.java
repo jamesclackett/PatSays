@@ -1,8 +1,10 @@
 package com.jimboidin.patsays.Game;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -143,9 +145,10 @@ public class LobbyActivity extends AppCompatActivity {
                         mPlayersTextView.append(child.getKey() + "\n"); //add to TextView
                     }
                 else {
-                    displayToast("Host has left game: exiting lobby");
+                    if (mIsHost) displayToast("exiting lobby");
+                    else displayToast("Host has left game: exiting lobby");
                     Log.i(TAG, "mPlayerListener: Game/key/Players/ snapshot doesn't exist");
-                    onBackPressed(); // exit lobby
+                    LobbyActivity.super.onBackPressed(); // exit lobby
                 }
             }
             @Override
@@ -215,8 +218,26 @@ public class LobbyActivity extends AppCompatActivity {
     // GameServer should be cleaned up on back pressed
     @Override
     public void onBackPressed() {
-        closeGame();
-        super.onBackPressed();
+        leaveDialog();
+    }
+
+    private void leaveDialog(){
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Leave Lobby?");
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                closeGame();
+                LobbyActivity.super.onBackPressed();
+            }
+        });
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        builder.show();
     }
 
     @Override
