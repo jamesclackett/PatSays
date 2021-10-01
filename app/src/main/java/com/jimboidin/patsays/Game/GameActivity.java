@@ -25,6 +25,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.jimboidin.patsays.R;
+import com.jimboidin.patsays.Social.User;
 import com.jimboidin.patsays.Utils.TheBrain;
 
 import java.util.ArrayList;
@@ -82,6 +83,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private ImageView mPlayPileImage;
     private Boolean mIsHost;
     private ArrayList<String> mPlayerList;
+    private HashMap<String, String> mUsernameMap;
     private String mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
@@ -105,11 +107,13 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
         mPlayerList = getIntent().getStringArrayListExtra("player_list");
         mCurrentGameDB = FirebaseDatabase.getInstance().getReference().child("Games").child(mHostName);
+        mUsernameMap = new HashMap<String, String>(); // holds uid:username key-pairs
         mSelectedList = new ArrayList<>(); // cards that the user currently has selected
         mHandList = new ArrayList<>(); // cards in the users own hand
         mPlayPile = new ArrayList<>(); // cards that have been played
         mPlayPileImage = findViewById(R.id.playpile_image_view);
 
+        createUsernameMap();
         setupMyFragment();
         setupOpponentFragments();
         initializeTurnListener();
@@ -132,6 +136,29 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         }
         else{
             setupDealtListener();
+        }
+    }
+
+
+    //TODO - Firebase function for this.
+    private void createUsernameMap(){
+        for (int i = 0; i < mPlayerList.size(); i++){
+            String uId = mPlayerList.get(i);
+            DatabaseReference usersDB = FirebaseDatabase.getInstance().getReference().child("Users")
+                    .child(uId);
+            usersDB.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot snapshot) {
+                    if (snapshot.exists()){
+                        System.out.println("HERE " + snapshot.child("username").getValue(String.class));
+                        mUsernameMap.put(uId, snapshot.child("username").getValue(String.class));
+                        System.out.println("username map size: " + mUsernameMap.size());
+                    }
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError error) { }
+            });
         }
     }
 
@@ -413,13 +440,15 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mTurnListener = mCurrentGameDB.child("Game_Info").child("turn").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.exists())
-                    if (snapshot.getValue(String.class).equals(mAuth.getUid())){
+                if (snapshot.exists()) {
+                    changeTurnIcon(snapshot.getValue(String.class));
+                    if (snapshot.getValue(String.class).equals(mAuth.getUid())) {
                         startChooser();
-                        for (Card card : mPlayPile){
+                        for (Card card : mPlayPile) {
                             System.out.println("playpile test: " + card.getSuit() + ", " + card.getValue());
                         }
                     }
+                }
 
             }
             @Override
@@ -445,6 +474,13 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             @Override
             public void onCancelled(@NonNull DatabaseError error) { }
         });
+    }
+
+    private void changeTurnIcon(String uId){
+        String player = mUsernameMap.get(uId);
+        System.out.println("player is: " + player);
+        TextView turnTV = findViewById(R.id.turnTextView);
+        turnTV.setText(player);
     }
 
 

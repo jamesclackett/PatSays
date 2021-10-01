@@ -36,7 +36,7 @@ import com.jimboidin.patsays.R;
     The logic of this fragment is similar to FriendsFragment in that it uses ListViews & Adapters,
     however there are no context menus. A user simply clicks on an invite to select.
 */
-
+//TODO - Firebase Functions for invites etc, so can restrict access to DB later
 public class InvitationsFragment extends Fragment {
     private final String TAG = "InvitationsFragment";
     private Context mContext;
