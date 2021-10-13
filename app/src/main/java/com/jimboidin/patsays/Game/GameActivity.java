@@ -1,6 +1,7 @@
 
 package com.jimboidin.patsays.Game;
 
+import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
@@ -8,6 +9,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -87,7 +89,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     private String mHostName;
     private FirebaseAuth mAuth;
     private DatabaseReference mCurrentGameDB;
-    private ValueEventListener mDealtListener, mTurnListener, mPlayPileListener, mLeftoverListener;
+    private ValueEventListener mDealtListener, mTurnListener,
+            mPlayPileListener, mLeftoverListener;
 
 
     @Override
@@ -112,6 +115,10 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         mHandList = new ArrayList<>(); // cards in the users own hand
         mPlayPile = new ArrayList<>(); // cards that have been played
         mPlayPileImage = findViewById(R.id.playpile_image_view);
+        mPlayPileImage.setOnLongClickListener(v -> {
+            callFour();
+            return true;
+        });
 
         createUsernameMap();
         setupMyFragment();
@@ -283,6 +290,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         // TODO - figure out if there is a race condition between onAttach and setDBRef
         ft.replace(R.id.my_table_fragment, myTableCards);
         ft.commit();
+        FrameLayout fl = findViewById(R.id.my_table_fragment);
+        fl.setTag(mAuth.getUid());
     }
 
     // Creates the opponent fragment(s) and loads them into activity
@@ -305,6 +314,8 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
             opponentFragment.setDBRef(playerDbRef);
             ft.replace(idPlaceholders[i], opponentFragment);
             ft.commit();
+            FrameLayout fl = findViewById(idPlaceholders[i]);
+            fl.setTag(opponentList.get(i));
         }
     }
 
@@ -443,10 +454,27 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
                 if (snapshot.exists()) {
                     changeTurnIcon(snapshot.getValue(String.class));
                     if (snapshot.getValue(String.class).equals(mAuth.getUid())) {
-                        startChooser();
-                        for (Card card : mPlayPile) {
-                            System.out.println("playpile test: " + card.getSuit() + ", " + card.getValue());
-                        }
+                        mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Joker")
+                        .addListenerForSingleValueEvent(new ValueEventListener() {
+                            @Override
+                            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                if (snapshot.exists() && snapshot.getValue(Boolean.class)){
+                                    mCurrentGameDB.child("Players").child(mAuth.getUid()).child("Joker").setValue(null);
+                                    displayToast("Received Joker!");
+                                    handleNonPlay(mAuth.getUid());
+                                }
+                                else {
+                                    startChooser();
+                                }
+                            }
+
+                            @Override
+                            public void onCancelled(@NonNull DatabaseError error) { }
+                        });
+                    }
+                    else {
+                        Button placeButton = findViewById(R.id.place_button);
+                        placeButton.setVisibility(View.GONE);
                     }
                 }
 
@@ -529,16 +557,17 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         }
     }
 
-    // When a player cannot make a play because of the cards they have
+    // When a player cannot make a play because of the cards they have.
     // called by startChooser based on the result of TheBrain's getPlayable() method
     // All play pile cards are moved to the users hand (play pile removed locally, and from DB)
     private void handleNonPlay(String nextTurn){
-        displayToast("no playable cards. picking up..");
+        displayToast("picking up..");
         mHandList.addAll(mPlayPile);
         TheBrain.sort(mHandList);
         mPlayPile.clear(); // THIS might not be necessary...?
         mCurrentGameDB.child("Game_Info").child("Play_Pile").removeValue();
         mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Game_Info").child("turn").setValue("skip");
         mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
     }
 
@@ -592,36 +621,71 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
 
     }
 
-    // Handle play of specual card: 10
+    // Handle play of special card: 10
     private void play10() {
         for (Card card : mSelectedList)
             mHandList.remove(card);
         mHandListAdapter.notifyDataSetChanged();
+        burnDeck();
+    }
+
+    private void burnDeck(){
         mCurrentGameDB.child("Game_Info").child("Play_Pile").removeValue();
         pickupCard();
         Button placeButton = findViewById(R.id.place_button);
         placeButton.setVisibility(View.GONE);
         mCurrentGameDB.child("Game_Info").child("turn").setValue("GO_AGAIN!");
         mCurrentGameDB.child("Game_Info").child("turn").setValue(mAuth.getUid());
+    }
 
+    private void callFour(){
+        if (checkContainsFour(mPlayPile, mPlayPile.get(0).getValue())){
+            burnDeck();
+        }
+        else {
+            displayToast("bad call of four");
+            handleNonPlay(mAuth.getUid());
+        }
+    }
+
+    private boolean checkContainsFour(ArrayList<Card> playPile, String value){
+        int counter = 0;
+        for (Card c : playPile){
+            if (c.getValue().equals(value)) counter++;
+            if (counter == 4) return true;
+        }
+        return false;
     }
 
     // Allows the player to select the opponent they wish to play the Joker against
     private void chooseJokerVictim(){
+        Button placeButton = findViewById(R.id.place_button);
+        placeButton.setVisibility(View.GONE);
+
+        for (Card card : mSelectedList){
+            mHandList.remove(card);
+            mPlayPile.add(0, card);
+        }
+        mHandListAdapter.notifyDataSetChanged();
+        mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
+
         FrameLayout fl0 = findViewById(R.id.placeholder_0);
         FrameLayout fl1 = findViewById(R.id.placeholder_1);
         FrameLayout fl2 = findViewById(R.id.placeholder_2);
+        FrameLayout flMe = findViewById(R.id.my_table_fragment);
 
         ArrayList<FrameLayout> flList = new ArrayList<>();
         flList.add(fl0);
         flList.add(fl1);
         flList.add(fl2);
+        flList.add(flMe);
 
         for (FrameLayout fl : flList){
             fl.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    System.out.println("frame_layout id : "+ fl.getId());
+                    System.out.println(fl.getTag().toString());
+                    playJoker(fl.getTag().toString());
                 }
             });
         }
@@ -630,19 +694,16 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
     }
 
     // Handle play of special card: Joker
-    private void playJoker() {
-        String victim = "hahah";
-        for (Card card : mSelectedList)
-            mHandList.remove(card);
-        mHandListAdapter.notifyDataSetChanged();
-        mCurrentGameDB.child("Players").child(victim).child("Joker").setValue(true);
+    private void playJoker(String victimId) {
+        // Burn the joker
+        mPlayPile.remove(0);
+        mCurrentGameDB.child("Game_Info").child("Play_Pile").setValue(mPlayPile);
+        mCurrentGameDB.child("Players").child(victimId).child("Joker").setValue(true);
         pickupCard();
-        Button placeButton = findViewById(R.id.place_button);
-        placeButton.setVisibility(View.GONE);
-        mCurrentGameDB.child("Game_Info").child("turn").setValue(victim);
-
-
+        mCurrentGameDB.child("Game_Info").child("turn").setValue("JOKER"); // in case given to self
+        mCurrentGameDB.child("Game_Info").child("turn").setValue(victimId);
     }
+
 
     // Handle play of special card: 8
     private void play8(String nextTurn) {
@@ -655,7 +716,7 @@ public class GameActivity extends AppCompatActivity implements HandListAdapter.L
         pickupCard();
         Button placeButton = findViewById(R.id.place_button);
         placeButton.setVisibility(View.GONE);
-        mCurrentGameDB.child("Game_Info").child("turn").setValue("SKIP!");
+        mCurrentGameDB.child("Game_Info").child("turn").setValue("8_SKIP");
         mCurrentGameDB.child("Game_Info").child("turn").setValue(nextTurn);
 
     }
