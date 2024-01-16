@@ -56,5 +56,7 @@ in their current game.
 
 ## User Interface:
 
+<img width="321" alt="image" src="https://github.com/jamesclackett/PatSays/assets/55019466/7dfd480e-50f7-47c0-918a-4ac70578a3de">
+<img width="321" alt="image" src="https://github.com/jamesclackett/PatSays/assets/55019466/04af7c82-93d6-4afa-8b1e-e287de305802">
 
-
+---
