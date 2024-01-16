@@ -10,6 +10,8 @@ by the player and placed face-up. The remainder are kept in their hand.
 
 Players must first empty their hand of cards, then the 3 face-up cards (in any order), and finally the 3 face-down cards (also in any order).
 
+**Please note that PatSays is currently in its final stages of development and not finalised.**
+
 ---
 #### Rules:
 
@@ -40,8 +42,19 @@ Special Cards (can be played at any time, all are equal value)
 * 10 (burn all played cards and go again)
 
 ---
-## Architecture:
+## Design:
 
+Pat Says relies on Googles Realtime Firebase Database to facilitate its online multiplayer, user authentication, and social features. PatSays allows between 2-4 players 
+per game and contains a 'friends' system similar to that found in many online multiplayer games. Users can search for others and add them as a friend or invite them to 
+games. It is also possible view all of the users recently played with. A list of all friends can be viewed, and from here they can also be imvited to a game.
+
+Games are initiated when a host player creates a pre-game lobby. This triggers a new directory in the realtime DB specifically for that game. All invited users are added 
+to this live game directory. Firebase Realtime DB offers a great API for event-driven database listeners. This allows all players to be immediately notified of changes 
+in their current game.
+
+---
+
+## User Interface:
 
 
 
