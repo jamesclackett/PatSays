@@ -10,7 +10,7 @@ by the player and placed face-up. The remainder are kept in their hand.
 
 Players must first empty their hand of cards, then the 3 face-up cards (in any order), and finally the 3 face-down cards (also in any order).
 
-**Please note that PatSays is currently in its final stages of development and not finalised.**
+_**Please note that PatSays is currently in its final stages of development and will be released on the Google Play Store towards the end of 2024.**_
 
 ---
 #### Rules:
